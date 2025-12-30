@@ -1,0 +1,5 @@
+{
+  "name": "OFC Poker React",
+  "description": "A single-player Open Face Chinese Poker game against an AI opponent with robust poker logic and interactive UI.",
+  "requestFramePermissions": []
+}
