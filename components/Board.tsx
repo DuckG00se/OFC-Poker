@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card as CardType, PlayerBoard, HandEvaluation } from '../types';
 import Card from './Card';
 
@@ -6,6 +6,7 @@ interface BoardProps {
   board: PlayerBoard;
   isHuman: boolean;
   onSlotClick?: (row: 'front' | 'mid' | 'back', index: number) => void;
+  onSlotDrop?: (cardId: string, row: 'front' | 'mid' | 'back', index: number) => void;
   highlightEmpty?: boolean;
   evaluations?: { front: HandEvaluation, mid: HandEvaluation, back: HandEvaluation };
   fouled?: boolean;
@@ -16,10 +17,31 @@ const Row: React.FC<{
   cards: (CardType | null)[];
   rowName: 'front' | 'mid' | 'back';
   onClick: (idx: number) => void;
+  onDrop: (cardId: string, idx: number) => void;
   highlight: boolean;
   evaluation?: HandEvaluation;
   isWinner?: boolean;
-}> = ({ cards, rowName, onClick, highlight, evaluation, isWinner }) => {
+}> = ({ cards, rowName, onClick, onDrop, highlight, evaluation, isWinner }) => {
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    if (cards[idx]) return; // Cannot drop on occupied slot
+    e.preventDefault();
+    setDragOverIdx(idx);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIdx(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    setDragOverIdx(null);
+    const cardId = e.dataTransfer.getData('cardId');
+    if (cardId) {
+      onDrop(cardId, idx);
+    }
+  };
   
   return (
     <div className={`flex gap-2 sm:gap-4 justify-center items-center my-2 p-2 rounded-xl transition-colors duration-300 ${isWinner ? 'bg-yellow-500/20' : ''}`}>
@@ -36,16 +58,20 @@ const Row: React.FC<{
           <div 
             key={`${rowName}-${idx}`} 
             onClick={() => !card && onClick(idx)}
+            onDragOver={(e) => handleDragOver(e, idx)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, idx)}
             className={`
-              relative rounded-lg border-2 border-dashed 
+              relative rounded-lg border-2 border-dashed transition-all duration-200
               ${!card ? (highlight ? 'border-yellow-500/50 bg-yellow-500/10 cursor-pointer hover:bg-yellow-500/20' : 'border-stone-600 bg-stone-800/50') : 'border-transparent'}
-              w-16 h-24 sm:w-20 sm:h-28 flex items-center justify-center transition-all
+              ${dragOverIdx === idx ? 'scale-110 border-yellow-400 bg-yellow-400/30 ring-4 ring-yellow-400/20 z-20' : ''}
+              w-16 h-24 sm:w-20 sm:h-28 flex items-center justify-center
             `}
           >
             {card ? (
               <Card card={card} />
             ) : (
-              <div className="text-stone-700 text-2xl font-bold opacity-20">+</div>
+              <div className={`text-stone-700 text-2xl font-bold transition-opacity ${dragOverIdx === idx ? 'opacity-100 text-yellow-500' : 'opacity-20'}`}>+</div>
             )}
           </div>
         ))}
@@ -58,7 +84,7 @@ const Row: React.FC<{
   );
 };
 
-const Board: React.FC<BoardProps> = ({ board, isHuman, onSlotClick, highlightEmpty, evaluations, fouled, isWinner }) => {
+const Board: React.FC<BoardProps> = ({ board, isHuman, onSlotClick, onSlotDrop, highlightEmpty, evaluations, fouled, isWinner }) => {
   return (
     <div className={`relative flex flex-col items-center p-4 rounded-3xl ${fouled ? 'bg-red-900/20 ring-4 ring-red-600' : 'bg-stone-800/40 shadow-2xl'}`}>
       
@@ -68,13 +94,11 @@ const Board: React.FC<BoardProps> = ({ board, isHuman, onSlotClick, highlightEmp
         </div>
       )}
 
-      {/* Rows are rendered Back to Front for visual layering logic if negative margin used, but here standard block is fine.
-          Actually, standard OFC view is Front Top, Back Bottom. */}
-      
       <Row 
         rowName="front" 
         cards={board.front} 
         onClick={(idx) => onSlotClick && onSlotClick('front', idx)} 
+        onDrop={(cardId, idx) => onSlotDrop && onSlotDrop(cardId, 'front', idx)}
         highlight={!!highlightEmpty}
         evaluation={evaluations?.front}
         isWinner={isWinner?.front}
@@ -83,6 +107,7 @@ const Board: React.FC<BoardProps> = ({ board, isHuman, onSlotClick, highlightEmp
         rowName="mid" 
         cards={board.mid} 
         onClick={(idx) => onSlotClick && onSlotClick('mid', idx)} 
+        onDrop={(cardId, idx) => onSlotDrop && onSlotDrop(cardId, 'mid', idx)}
         highlight={!!highlightEmpty}
         evaluation={evaluations?.mid}
         isWinner={isWinner?.mid}
@@ -91,6 +116,7 @@ const Board: React.FC<BoardProps> = ({ board, isHuman, onSlotClick, highlightEmp
         rowName="back" 
         cards={board.back} 
         onClick={(idx) => onSlotClick && onSlotClick('back', idx)} 
+        onDrop={(cardId, idx) => onSlotDrop && onSlotDrop(cardId, 'back', idx)}
         highlight={!!highlightEmpty}
         evaluation={evaluations?.back}
         isWinner={isWinner?.back}

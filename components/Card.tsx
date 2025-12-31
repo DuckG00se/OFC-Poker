@@ -6,12 +6,22 @@ import { RANK_NAMES } from '../constants';
 interface CardProps {
   card: CardType;
   onClick?: () => void;
+  onDragStart?: (e: React.DragEvent) => void;
   selected?: boolean;
   className?: string;
   small?: boolean;
+  draggable?: boolean;
 }
 
-const Card: React.FC<CardProps> = ({ card, onClick, selected, className = '', small = false }) => {
+const Card: React.FC<CardProps> = ({ 
+  card, 
+  onClick, 
+  onDragStart,
+  selected, 
+  className = '', 
+  small = false,
+  draggable = false
+}) => {
   const isRed = card.suit === 'h' || card.suit === 'd';
   
   const SuitIcon = () => {
@@ -26,14 +36,24 @@ const Card: React.FC<CardProps> = ({ card, onClick, selected, className = '', sm
 
   const rankDisplay = RANK_NAMES[card.rank] || card.rank.toString();
 
+  const handleDragStart = (e: React.DragEvent) => {
+    if (!draggable) return;
+    e.dataTransfer.setData('cardId', card.id);
+    e.dataTransfer.effectAllowed = 'move';
+    if (onDragStart) onDragStart(e);
+  };
+
   return (
     <div 
       onClick={onClick}
+      draggable={draggable}
+      onDragStart={handleDragStart}
       className={`
         relative bg-white rounded-lg shadow-md border-2 select-none transition-all duration-150
         ${selected ? 'border-yellow-400 -translate-y-2 shadow-xl ring-2 ring-yellow-400' : 'border-slate-300 hover:border-slate-400'}
         ${small ? 'w-10 h-14' : 'w-16 h-24 sm:w-20 sm:h-28'}
         flex flex-col items-center justify-between p-1 cursor-pointer
+        ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}
         ${className}
       `}
     >

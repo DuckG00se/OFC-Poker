@@ -28,6 +28,7 @@ const App: React.FC = () => {
   const [ai, setAi] = useState<PlayerState>(INITIAL_PLAYER_STATE);
   
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [aiEvaluations, setAiEvaluations] = useState<{front:HandEvaluation, mid:HandEvaluation, back:HandEvaluation} | undefined>(undefined);
   const [humanEvaluations, setHumanEvaluations] = useState<{front:HandEvaluation, mid:HandEvaluation, back:HandEvaluation} | undefined>(undefined);
   const [winnerFlags, setWinnerFlags] = useState<{front: boolean, mid: boolean, back: boolean} | undefined>(undefined);
@@ -67,12 +68,11 @@ const App: React.FC = () => {
     setPhase('PLACEMENT');
   };
 
-  const handleSlotClick = (row: 'front' | 'mid' | 'back', index: number) => {
+  const placeCard = (cardId: string, row: 'front' | 'mid' | 'back', index: number) => {
     if (phase !== 'PLACEMENT' && phase !== 'DRAWING') return;
-    if (!selectedCardId) return;
     if (human.board[row][index] !== null) return; // Slot occupied
 
-    const cardToPlace = human.hand.find(c => c.id === selectedCardId);
+    const cardToPlace = human.hand.find(c => c.id === cardId);
     if (!cardToPlace) return;
 
     // Update Board
@@ -82,10 +82,20 @@ const App: React.FC = () => {
     newBoard[row] = newRow;
 
     // Remove from Hand
-    const newHand = human.hand.filter(c => c.id !== selectedCardId);
+    const newHand = human.hand.filter(c => c.id !== cardId);
 
     setHuman(prev => ({ ...prev, board: newBoard, hand: newHand }));
     setSelectedCardId(null);
+  };
+
+  const handleSlotClick = (row: 'front' | 'mid' | 'back', index: number) => {
+    if (selectedCardId) {
+      placeCard(selectedCardId, row, index);
+    }
+  };
+
+  const handleSlotDrop = (cardId: string, row: 'front' | 'mid' | 'back', index: number) => {
+    placeCard(cardId, row, index);
   };
 
   // Check Phase Transitions
@@ -99,8 +109,6 @@ const App: React.FC = () => {
     } else if (phase === 'DRAWING') {
       if (human.hand.length === 0 && !isBoardFull(human.board)) {
         // Wait for player to place, then trigger next draw
-        // If player hand is empty and board NOT full, it means they just placed.
-        // If board IS full, we go to scoring.
       } else if (human.hand.length === 0 && isBoardFull(human.board)) {
          setPhase('SCORING');
       }
@@ -128,7 +136,6 @@ const App: React.FC = () => {
     setHuman(prev => ({ ...prev, hand: [nextCardHuman] }));
 
     // AI Places card immediately
-    // Wait a small delay for "thinking" feel?
     setAi(prev => {
         const newBoard = performAIMove({ board: prev.board, hand: [nextCardAi] });
         return { ...prev, board: newBoard };
@@ -185,27 +192,21 @@ const App: React.FC = () => {
       } else if (aiFouled && !humanFouled) {
           hScore = 6;
       } else if (humanFouled && aiFouled) {
-          // Tie / Nothing happens usually, or 0-0
           hScore = 0;
           aiScore = 0;
       } else {
-          // Both valid
-          // Front
           const frontDiff = compareHands(hFront, aiFront);
           if (frontDiff > 0) { scores.front = 1; winners.front = true; }
           else if (frontDiff < 0) { scores.front = -1; }
 
-          // Mid
           const midDiff = compareHands(hMid, aiMid);
           if (midDiff > 0) { scores.mid = 1; winners.mid = true; }
           else if (midDiff < 0) { scores.mid = -1; }
 
-          // Back
           const backDiff = compareHands(hBack, aiBack);
           if (backDiff > 0) { scores.back = 1; winners.back = true; }
           else if (backDiff < 0) { scores.back = -1; }
 
-          // Scoop Check
           if (scores.front > 0 && scores.mid > 0 && scores.back > 0) {
               scores.scoop = 3;
           } else if (scores.front < 0 && scores.mid < 0 && scores.back < 0) {
@@ -221,7 +222,6 @@ const App: React.FC = () => {
       setAi(prev => ({ ...prev, scores: { ...prev.scores, total: aiScore } }));
       setWinnerFlags(winners);
 
-      // Update Game Stats
       if (hScore > aiScore) {
           setStats(s => ({ ...s, humanWins: s.humanWins + 1 }));
       } else if (aiScore > hScore) {
@@ -290,22 +290,26 @@ const App: React.FC = () => {
            )}
 
            {(phase === 'PLACEMENT' || phase === 'DRAWING') && (
-               <div className="flex gap-4 items-center animate-in fade-in zoom-in duration-300">
-                   <div className="text-stone-400 text-sm font-bold uppercase tracking-widest mr-4">
-                       Your Hand:
-                   </div>
-                   {human.hand.map((card) => (
-                       <Card 
-                           key={card.id} 
-                           card={card} 
-                           onClick={() => setSelectedCardId(selectedCardId === card.id ? null : card.id)}
-                           selected={selectedCardId === card.id}
-                           className="hover:-translate-y-4 shadow-2xl"
-                       />
-                   ))}
-                   {human.hand.length === 0 && (
-                       <div className="text-stone-500 italic text-sm">Waiting...</div>
-                   )}
+               <div className="flex flex-col items-center gap-2">
+                    <div className="text-stone-400 text-[10px] font-bold uppercase tracking-widest mb-1 opacity-50">
+                        Drag cards to place them
+                    </div>
+                    <div className="flex gap-4 items-center animate-in fade-in zoom-in duration-300">
+                        {human.hand.map((card) => (
+                            <Card 
+                                key={card.id} 
+                                card={card} 
+                                draggable={true}
+                                onDragStart={() => setIsDragging(true)}
+                                onClick={() => setSelectedCardId(selectedCardId === card.id ? null : card.id)}
+                                selected={selectedCardId === card.id}
+                                className="hover:-translate-y-4 shadow-2xl"
+                            />
+                        ))}
+                        {human.hand.length === 0 && (
+                            <div className="text-stone-500 italic text-sm">Waiting for CPU...</div>
+                        )}
+                    </div>
                </div>
            )}
 
@@ -354,13 +358,14 @@ const App: React.FC = () => {
         {/* Human Board */}
         <div className="relative">
              <div className="absolute -top-3 left-4 text-xs font-bold text-stone-400 uppercase tracking-widest bg-[#1a3c28] px-2 z-10">
-                You
+                Your Board
              </div>
              <Board 
                 board={human.board} 
                 isHuman={true} 
                 onSlotClick={handleSlotClick}
-                highlightEmpty={!!selectedCardId}
+                onSlotDrop={handleSlotDrop}
+                highlightEmpty={!!selectedCardId || isDragging}
                 evaluations={humanEvaluations}
                 fouled={human.fouled}
                 isWinner={winnerFlags}
@@ -372,7 +377,7 @@ const App: React.FC = () => {
       {/* Footer / Instructions */}
       <footer className="w-full max-w-4xl px-4 mt-4 flex justify-between text-xs text-stone-500 font-medium">
           <div>OFC POKER v1.0</div>
-          <div>BACK &gt; MID &gt; FRONT</div>
+          <div>RULES: BACK &gt; MID &gt; FRONT (Strongest to Weakest)</div>
       </footer>
     </div>
   );
