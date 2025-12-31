@@ -19,13 +19,12 @@ const Row: React.FC<{
   onClick: (idx: number) => void;
   onDrop: (cardId: string, idx: number) => void;
   highlight: boolean;
-  evaluation?: HandEvaluation;
   isWinner?: boolean;
-}> = ({ cards, rowName, onClick, onDrop, highlight, evaluation, isWinner }) => {
+}> = ({ cards, rowName, onClick, onDrop, highlight, isWinner }) => {
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   const handleDragOver = (e: React.DragEvent, idx: number) => {
-    if (cards[idx]) return; // Cannot drop on occupied slot
+    if (cards[idx]) return; 
     e.preventDefault();
     setDragOverIdx(idx);
   };
@@ -44,13 +43,12 @@ const Row: React.FC<{
   };
   
   return (
-    <div className={`flex gap-2 sm:gap-4 justify-center items-center my-2 p-2 rounded-xl transition-colors duration-300 ${isWinner ? 'bg-yellow-500/20' : ''}`}>
-      {/* Row Label / Hand Strength */}
-      <div className="w-24 text-right pr-4 hidden sm:block">
-        <div className="uppercase text-xs font-bold text-stone-400 tracking-wider">{rowName}</div>
-        {evaluation && (
-          <div className="text-xs text-yellow-300 font-semibold truncate">{evaluation.name}</div>
-        )}
+    <div className={`
+      flex gap-2 sm:gap-4 justify-center items-center my-2 p-2 rounded-xl transition-all duration-300 relative
+      ${isWinner ? 'bg-[#d4af37]/5 ring-1 ring-[#d4af37]/30 shadow-[0_0_20px_rgba(212,175,55,0.1)]' : ''}
+    `}>
+      <div className="w-16 text-right pr-2 hidden sm:block">
+        <div className={`uppercase text-[9px] font-black tracking-[0.2em] ${isWinner ? 'text-[#d4af37]' : 'text-stone-500'}`}>{rowName}</div>
       </div>
 
       <div className="flex gap-2">
@@ -63,34 +61,43 @@ const Row: React.FC<{
             onDrop={(e) => handleDrop(e, idx)}
             className={`
               relative rounded-lg border-2 border-dashed transition-all duration-200
-              ${!card ? (highlight ? 'border-yellow-500/50 bg-yellow-500/10 cursor-pointer hover:bg-yellow-500/20' : 'border-stone-600 bg-stone-800/50') : 'border-transparent'}
-              ${dragOverIdx === idx ? 'scale-110 border-yellow-400 bg-yellow-400/30 ring-4 ring-yellow-400/20 z-20' : ''}
+              ${!card ? (highlight ? 'border-[#d4af37]/40 bg-[#d4af37]/5 cursor-pointer hover:bg-[#d4af37]/10' : 'border-stone-800 bg-black/20') : 'border-transparent'}
+              ${dragOverIdx === idx ? 'scale-105 border-[#d4af37] bg-[#d4af37]/20 shadow-[0_0_15px_rgba(212,175,55,0.2)]' : ''}
               w-16 h-24 sm:w-20 sm:h-28 flex items-center justify-center
             `}
           >
             {card ? (
-              <Card card={card} />
+              <Card card={card} className={isWinner ? 'ring-2 ring-[#d4af37] shadow-[0_0_15px_rgba(212,175,55,0.4)]' : ''} />
             ) : (
-              <div className={`text-stone-700 text-2xl font-bold transition-opacity ${dragOverIdx === idx ? 'opacity-100 text-yellow-500' : 'opacity-20'}`}>+</div>
+              <div className={`text-[#d4af37] text-2xl font-bold transition-opacity ${dragOverIdx === idx ? 'opacity-100' : 'opacity-10'}`}>+</div>
             )}
           </div>
         ))}
       </div>
-       {/* Mobile Hand Strength */}
-       {evaluation && (
-          <div className="sm:hidden absolute left-2 text-[10px] text-yellow-300 bg-black/50 px-1 rounded">{evaluation.name}</div>
-        )}
+
+      {isWinner && (
+         <div className="absolute -right-3 sm:-right-6 bg-gradient-to-b from-[#e7c25d] to-[#d4af37] text-stone-900 rounded-full p-1 shadow-lg border border-black/20 transform scale-75 sm:scale-100">
+           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+         </div>
+      )}
     </div>
   );
 };
 
 const Board: React.FC<BoardProps> = ({ board, isHuman, onSlotClick, onSlotDrop, highlightEmpty, evaluations, fouled, isWinner }) => {
   return (
-    <div className={`relative flex flex-col items-center p-4 rounded-3xl ${fouled ? 'bg-red-900/20 ring-4 ring-red-600' : 'bg-stone-800/40 shadow-2xl'}`}>
+    <div className={`
+      relative flex flex-col items-center p-4 rounded-[2.5rem] transition-all duration-500
+      ${fouled ? 'bg-rose-900/10 ring-4 ring-rose-600/50' : 'bg-black/30 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/5 backdrop-blur-xl'}
+    `}>
       
       {fouled && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 rounded-3xl backdrop-blur-sm pointer-events-none">
-          <h2 className="text-6xl font-black text-red-500 tracking-widest border-4 border-red-500 p-4 rotate-12">FOULED</h2>
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/80 rounded-[2.5rem] backdrop-blur-[4px] pointer-events-none">
+          <div className="flex flex-col items-center animate-in zoom-in duration-300">
+            <h2 className="text-4xl sm:text-6xl font-black text-rose-500 tracking-[0.2em] border-8 border-rose-500 px-8 py-4 -rotate-12 shadow-[0_0_50px_rgba(239,68,68,0.4)]">
+              FOULED
+            </h2>
+          </div>
         </div>
       )}
 
@@ -100,25 +107,24 @@ const Board: React.FC<BoardProps> = ({ board, isHuman, onSlotClick, onSlotDrop, 
         onClick={(idx) => onSlotClick && onSlotClick('front', idx)} 
         onDrop={(cardId, idx) => onSlotDrop && onSlotDrop(cardId, 'front', idx)}
         highlight={!!highlightEmpty}
-        evaluation={evaluations?.front}
         isWinner={isWinner?.front}
       />
+      <div className="w-[80%] h-px bg-white/5 mx-auto"></div>
       <Row 
         rowName="mid" 
         cards={board.mid} 
         onClick={(idx) => onSlotClick && onSlotClick('mid', idx)} 
         onDrop={(cardId, idx) => onSlotDrop && onSlotDrop(cardId, 'mid', idx)}
         highlight={!!highlightEmpty}
-        evaluation={evaluations?.mid}
         isWinner={isWinner?.mid}
       />
+      <div className="w-[80%] h-px bg-white/5 mx-auto"></div>
       <Row 
         rowName="back" 
         cards={board.back} 
         onClick={(idx) => onSlotClick && onSlotClick('back', idx)} 
         onDrop={(cardId, idx) => onSlotDrop && onSlotDrop(cardId, 'back', idx)}
         highlight={!!highlightEmpty}
-        evaluation={evaluations?.back}
         isWinner={isWinner?.back}
       />
     </div>

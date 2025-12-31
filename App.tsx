@@ -273,46 +273,58 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#1a3c28] flex flex-col items-center justify-between py-4 font-sans relative overflow-hidden">
-      <div className="absolute inset-0 opacity-10 pointer-events-none" 
-           style={{ backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+    <div className="min-h-screen bg-[#061c12] flex flex-col items-center py-4 font-sans relative overflow-x-hidden selection:bg-yellow-500/30">
+      {/* Table Surface: High-end Velvet Felt Radial Gradient */}
+      <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,_#134e32_0%,_#061c12_70%)] opacity-100"></div>
+      
+      {/* Texture Overlay */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0" 
+           style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/black-felt.png")' }}>
       </div>
 
-      <header className="w-full max-w-5xl px-4 flex flex-wrap justify-between items-center z-10 text-stone-300 mb-2 gap-4">
+      {/* Decorative Mahogany Rails (Top/Bottom) */}
+      <div className="absolute top-0 left-0 w-full h-16 bg-gradient-to-b from-[#3d1a10] to-[#26100a] shadow-2xl border-b border-[#5a2818]/30 z-10 flex items-center justify-center opacity-90">
+         <div className="absolute bottom-0 w-full h-[2px] bg-gradient-to-r from-transparent via-[#d4af37]/40 to-transparent"></div>
+      </div>
+      <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-[#3d1a10] to-[#26100a] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] border-t border-[#5a2818]/30 z-10 flex items-center justify-center opacity-90">
+         <div className="absolute top-0 w-full h-[1px] bg-[#d4af37]/20"></div>
+      </div>
+
+      <header className="w-full max-w-5xl px-4 flex flex-wrap justify-between items-center z-20 text-stone-300 mt-16 mb-6 gap-4">
         <div className="flex items-center gap-3">
-          <div className="bg-yellow-500/20 px-3 py-1 rounded-lg border border-yellow-500/30 flex items-center gap-2">
-             <Timer size={14} className="text-yellow-500" />
-             <span className="font-black text-xs text-yellow-500 uppercase tracking-tighter">
+          <div className="bg-[#d4af37]/10 px-3 py-1 rounded-lg border border-[#d4af37]/40 flex items-center gap-2 shadow-[0_0_15px_rgba(212,175,55,0.1)] backdrop-blur-sm">
+             <Timer size={14} className="text-[#d4af37]" />
+             <span className="font-black text-xs text-[#d4af37] uppercase tracking-tighter">
                 {roundCount <= TOTAL_ROUNDS ? `Round ${roundCount} / 10` : 'Series Ended'}
              </span>
           </div>
-          <span className="font-bold tracking-widest text-sm text-white/90 hidden sm:inline uppercase">OFC High Roller</span>
+          <span className="font-black tracking-[0.2em] text-sm text-[#d4af37] drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] hidden sm:inline uppercase">OFC High Roller</span>
         </div>
 
-        <div className="flex items-center gap-4 bg-black/40 px-6 py-2 rounded-2xl border border-white/5 shadow-xl backdrop-blur-md">
+        <div className="flex items-center gap-4 bg-black/60 px-6 py-2 rounded-2xl border border-white/5 shadow-2xl backdrop-blur-xl">
             <div className="flex gap-6 text-xs font-bold items-center">
                  <div className="flex flex-col items-end">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="text-[10px] opacity-40 uppercase tracking-tighter font-black">PLAYER</span>
-                        <span className="bg-green-500/20 text-green-400 px-1.5 rounded-sm text-[9px] border border-green-500/30">{stats.humanWins} W</span>
+                        <span className="text-[10px] text-stone-500 uppercase tracking-tighter font-black">PLAYER</span>
+                        <span className="bg-emerald-500/10 text-emerald-400 px-1.5 rounded-sm text-[9px] border border-emerald-500/20">{stats.humanWins} W</span>
                     </div>
-                    <div className="flex items-center gap-1 text-green-400 font-black">
+                    <div className="flex items-center gap-1 text-emerald-400 font-black">
                         <DollarSign size={12} />
                         <span>{humanBalance.toLocaleString()}</span>
                     </div>
                  </div>
 
                  <div className="flex flex-col items-center px-2 opacity-60">
-                    <Trophy size={16} className={stats.humanWins > stats.aiWins ? 'text-yellow-500' : stats.aiWins > stats.humanWins ? 'text-red-500' : 'text-stone-600'} />
+                    <Trophy size={16} className={stats.humanWins > stats.aiWins ? 'text-yellow-500' : stats.aiWins > stats.humanWins ? 'text-red-500' : 'text-stone-700'} />
                     <span className="text-[8px] text-stone-500 font-black tracking-tighter">VS</span>
                  </div>
 
                  <div className="flex flex-col items-start">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="bg-red-500/20 text-red-400 px-1.5 rounded-sm text-[9px] border border-red-500/30">{stats.aiWins} W</span>
-                        <span className="text-[10px] opacity-40 uppercase tracking-tighter font-black">CPU</span>
+                        <span className="bg-rose-500/10 text-rose-400 px-1.5 rounded-sm text-[9px] border border-rose-500/20">{stats.aiWins} W</span>
+                        <span className="text-[10px] text-stone-500 uppercase tracking-tighter font-black">CPU</span>
                     </div>
-                    <div className="flex items-center gap-1 text-red-400 font-black">
+                    <div className="flex items-center gap-1 text-rose-400 font-black">
                         <DollarSign size={12} />
                         <span>{aiBalance.toLocaleString()}</span>
                     </div>
@@ -320,17 +332,17 @@ const App: React.FC = () => {
             </div>
         </div>
 
-        <div className="text-[10px] sm:text-xs uppercase tracking-wider font-semibold opacity-60 bg-white/5 px-2 py-1 rounded">
+        <div className="text-[10px] sm:text-xs uppercase tracking-[0.2em] font-black text-stone-500 bg-black/40 px-3 py-1 rounded-full border border-white/5 backdrop-blur-md">
             {phase.replace('_', ' ')}
         </div>
       </header>
 
-      <div className="flex-1 w-full max-w-4xl flex flex-col gap-4 relative z-0">
+      <div className="w-full max-w-4xl flex flex-col gap-6 relative z-10 px-4">
         
         {/* Opponent Row */}
-        <div className="relative">
-             <div className="absolute -top-3 left-4 text-xs font-bold text-stone-500 uppercase tracking-widest bg-[#1a3c28] px-2 z-10">
-                Opponent
+        <div className="relative group">
+             <div className="absolute -top-3 left-6 text-[10px] font-black text-rose-400/60 uppercase tracking-[0.3em] bg-[#0c2a1c] px-3 z-10 border border-rose-400/20 rounded-full">
+                The House (AI)
              </div>
              <Board 
                 board={ai.board} 
@@ -339,34 +351,34 @@ const App: React.FC = () => {
                 fouled={ai.fouled}
              />
              {phase === 'PLACEMENT' || phase === 'DRAWING' ? (
-                <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 text-red-400 text-xs font-bold shadow-lg">
-                    <Coins size={12} />
+                <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20 text-rose-400 text-[10px] font-black shadow-lg backdrop-blur-md">
+                    <Coins size={10} />
                     CPU STAKE: ${aiBet}
                 </div>
              ) : null}
         </div>
 
         {/* Dynamic Center Area */}
-        <div className="flex items-center justify-center min-h-[240px]">
+        <div className="flex items-center justify-center min-h-[200px] py-4">
            
            {phase === 'START' && (
                <div className="text-center flex flex-col items-center gap-6">
-                   <div className="bg-black/40 p-8 rounded-[2rem] border border-white/10 backdrop-blur-md shadow-2xl max-w-md animate-in fade-in slide-in-from-top-4 duration-500">
+                   <div className="bg-black/60 p-10 rounded-[2.5rem] border border-white/5 backdrop-blur-2xl shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)] max-w-md animate-in fade-in slide-in-from-top-4 duration-500">
                         <h2 className="text-white text-3xl font-black mb-1 tracking-tighter">
-                            {roundCount > TOTAL_ROUNDS ? 'SERIES COMPLETE' : 'READY FOR NEXT HAND?'}
+                            {roundCount > TOTAL_ROUNDS ? 'TOURNAMENT OVER' : 'NEXT HAND'}
                         </h2>
-                        <div className="w-16 h-1 bg-yellow-500 mx-auto mb-4 rounded-full"></div>
-                        <p className="text-stone-400 mb-6 text-sm leading-relaxed">
+                        <div className="w-20 h-1 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent mx-auto mb-6 rounded-full"></div>
+                        <p className="text-stone-400 mb-8 text-sm leading-relaxed font-medium">
                             {roundCount > TOTAL_ROUNDS 
-                                ? `10 hands have been played. Final Standings: YOU ${stats.humanWins} - ${stats.aiWins} CPU.` 
-                                : `Round ${roundCount} of ${TOTAL_ROUNDS}. The AI is currently calculating its strategic bet based on its remaining $${aiRemainingToBet} obligation.`}
+                                ? `The series has concluded. Final Score: You ${stats.humanWins} vs House ${stats.aiWins}.` 
+                                : `Step into Round ${roundCount}. The House is eyeing your stack. Ready to commit your blind?`}
                         </p>
                         <button 
                             onClick={startBetting}
-                            className="group relative px-10 py-4 bg-yellow-500 hover:bg-yellow-400 text-stone-900 font-black text-xl rounded-full shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-3 overflow-hidden"
+                            className="group relative px-12 py-4 bg-gradient-to-b from-[#e7c25d] to-[#d4af37] hover:from-[#f3d37a] hover:to-[#e7c25d] text-stone-900 font-black text-xl rounded-full shadow-[0_10px_30px_rgba(212,175,55,0.3)] transition-all hover:scale-105 active:scale-95 flex items-center gap-3 overflow-hidden mx-auto"
                         >
                             <Coins size={24} className="group-hover:rotate-12 transition-transform" />
-                            {roundCount > TOTAL_ROUNDS ? 'NEW TOURNAMENT' : 'ENTER BETTING'}
+                            {roundCount > TOTAL_ROUNDS ? 'RE-BUY' : 'PLACE BETS'}
                         </button>
                    </div>
                </div>
@@ -374,10 +386,10 @@ const App: React.FC = () => {
 
            {phase === 'BETTING' && (
                <div className="flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-300">
-                    <div className="flex flex-col items-center bg-black/20 px-8 py-4 rounded-3xl border border-white/5">
-                        <div className="text-stone-400 text-xs font-bold uppercase tracking-[0.2em] mb-1">Your Total Wager</div>
-                        <div className="text-6xl font-black text-yellow-400 drop-shadow-lg flex items-center justify-center gap-1">
-                            <DollarSign size={40} className="text-yellow-600" />
+                    <div className="flex flex-col items-center bg-black/40 px-10 py-5 rounded-[2rem] border border-white/10 backdrop-blur-xl shadow-2xl">
+                        <div className="text-[#d4af37] text-[10px] font-black uppercase tracking-[0.3em] mb-1">Total Wager</div>
+                        <div className="text-7xl font-black text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.2)] flex items-center justify-center gap-1">
+                            <span className="text-[#d4af37] opacity-80 text-4xl">$</span>
                             {humanBet}
                         </div>
                     </div>
@@ -390,39 +402,39 @@ const App: React.FC = () => {
                                 disabled={humanBalance < val}
                                 className={`
                                     ${getChipColor(val)}
-                                    w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-dashed 
+                                    w-16 h-16 sm:w-20 sm:h-20 rounded-full border-[6px] border-dashed border-white/20
                                     flex items-center justify-center text-white font-black text-lg sm:text-xl
-                                    shadow-2xl transition-all active:scale-90 hover:-translate-y-2
+                                    shadow-2xl transition-all active:scale-90 hover:-translate-y-3
                                     disabled:opacity-20 disabled:grayscale disabled:cursor-not-allowed
-                                    relative overflow-hidden group
+                                    relative overflow-hidden group ring-4 ring-black/20
                                 `}
                             >
-                                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                                ${val}
+                                <div className="absolute inset-0 bg-gradient-to-tr from-black/20 to-white/20 opacity-40"></div>
+                                <div className="relative z-10">${val}</div>
                             </button>
                         ))}
                     </div>
 
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="flex items-center gap-2 bg-stone-900/50 px-4 py-2 rounded-full border border-stone-800 text-stone-500 text-xs font-bold italic">
-                            <BrainCircuit size={14} className="text-red-500" />
-                            AI Strategy: <span className="text-stone-300">{aiStrategy}</span>
+                    <div className="flex flex-col items-center gap-5">
+                        <div className="flex items-center gap-3 bg-black/40 px-5 py-2 rounded-full border border-[#d4af37]/20 text-stone-500 text-[10px] font-black tracking-widest uppercase backdrop-blur-md">
+                            <BrainCircuit size={14} className="text-rose-500" />
+                            House Mood: <span className="text-stone-200">{aiStrategy}</span>
                         </div>
                         
                         <div className="flex gap-4">
                             <button 
                                 onClick={clearBet}
-                                className="px-6 py-2 bg-stone-800/50 text-stone-500 hover:text-stone-100 rounded-full text-xs font-bold transition-colors uppercase tracking-widest border border-stone-700"
+                                className="px-6 py-2 bg-stone-900/50 text-stone-500 hover:text-stone-100 rounded-full text-[10px] font-black transition-colors uppercase tracking-[0.2em] border border-stone-800"
                             >
-                                Reset
+                                Clear
                             </button>
                             <button 
                                 onClick={startGame}
                                 disabled={humanBet === 0}
-                                className="px-10 py-4 bg-green-500 hover:bg-green-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black rounded-full shadow-2xl transition-all hover:scale-105 flex items-center gap-2"
+                                className="px-10 py-4 bg-[#d4af37] hover:bg-[#e7c25d] disabled:opacity-50 disabled:cursor-not-allowed text-stone-900 font-black rounded-full shadow-[0_10px_25px_rgba(212,175,55,0.3)] transition-all hover:scale-105 flex items-center gap-2"
                             >
                                 <Play size={20} fill="currentColor" />
-                                LOCK BETS
+                                DEAL HAND
                             </button>
                         </div>
                     </div>
@@ -430,8 +442,8 @@ const App: React.FC = () => {
            )}
 
            {(phase === 'PLACEMENT' || phase === 'DRAWING') && (
-               <div className="flex flex-col items-center gap-2">
-                    <div className="flex gap-4 items-center animate-in fade-in zoom-in duration-300">
+               <div className="flex flex-col items-center gap-6">
+                    <div className="flex gap-4 items-center animate-in fade-in zoom-in duration-300 overflow-x-auto overflow-y-visible max-w-full pt-10 pb-6 px-4 scrollbar-hide">
                         {human.hand.map((card) => (
                             <Card 
                                 key={card.id} 
@@ -442,73 +454,71 @@ const App: React.FC = () => {
                                     setSelectedCardId(selectedCardId === card.id ? null : card.id);
                                 }}
                                 selected={selectedCardId === card.id}
-                                className="hover:-translate-y-4 shadow-2xl"
+                                className="hover:-translate-y-8 hover:z-50 shadow-[0_15px_30px_rgba(0,0,0,0.6)]"
                             />
                         ))}
                         {human.hand.length === 0 && (
-                            <div className="text-stone-500 italic text-sm animate-pulse flex items-center gap-3 bg-black/40 px-6 py-3 rounded-full border border-white/10 shadow-xl">
-                                <RefreshCw size={16} className="animate-spin text-yellow-500" />
-                                <span className="font-bold tracking-tight">CPU is analyzing the board...</span>
+                            <div className="text-[#d4af37] italic text-xs animate-pulse flex items-center gap-3 bg-black/60 px-8 py-4 rounded-full border border-[#d4af37]/20 shadow-2xl backdrop-blur-xl">
+                                <RefreshCw size={18} className="animate-spin text-[#d4af37]" />
+                                <span className="font-black uppercase tracking-[0.2em]">Croupier is shuffling...</span>
                             </div>
                         )}
                     </div>
-                    <div className="mt-4 flex gap-6 text-[11px] font-black uppercase tracking-[0.2em] bg-black/20 px-4 py-1.5 rounded-full">
-                        <span className="text-yellow-500/70">You: ${humanBet}</span>
-                        <span className="text-red-500/70">CPU: ${aiBet}</span>
-                        <span className="text-white/90">Pot: ${humanBet + aiBet}</span>
+                    <div className="flex gap-8 text-[10px] font-black uppercase tracking-[0.3em] bg-black/40 px-6 py-2 rounded-full border border-white/5 backdrop-blur-md">
+                        <span className="text-emerald-400">Player: ${humanBet}</span>
+                        <div className="w-px h-3 bg-white/10"></div>
+                        <span className="text-rose-400">House: ${aiBet}</span>
+                        <div className="w-px h-3 bg-white/10"></div>
+                        <span className="text-white">Pot: ${humanBet + aiBet}</span>
                     </div>
                </div>
            )}
 
            {phase === 'GAME_OVER' && (
-               <div className="flex flex-col items-center gap-4 animate-in slide-in-from-bottom-4 duration-500">
-                   <div className="bg-stone-900/90 p-8 rounded-[2.5rem] border border-stone-700 backdrop-blur-xl flex items-center gap-10 shadow-2xl relative overflow-hidden">
-                       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-stone-600 to-transparent opacity-50"></div>
+               <div className="flex flex-col items-center gap-8 animate-in slide-in-from-bottom-8 duration-700">
+                   <div className="bg-black/60 p-10 rounded-[3rem] border border-[#d4af37]/20 backdrop-blur-2xl flex items-center gap-12 shadow-[0_40px_80px_rgba(0,0,0,0.6)] relative overflow-hidden">
+                       <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[#d4af37]/50 to-transparent opacity-80"></div>
                        <div className="text-center">
-                           <div className="text-stone-500 text-[10px] font-bold uppercase tracking-widest mb-1">Your Pts</div>
-                           <div className={`text-5xl font-black ${human.scores.total > ai.scores.total ? 'text-green-400' : 'text-stone-300'}`}>
+                           <div className="text-stone-500 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Points</div>
+                           <div className={`text-6xl font-black ${human.scores.total > ai.scores.total ? 'text-emerald-400' : 'text-stone-300'}`}>
                                {human.scores.total}
                            </div>
                        </div>
-                       <div className="h-16 w-px bg-stone-800"></div>
+                       <div className="h-20 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent"></div>
                        <div className="text-center">
-                           <div className="text-stone-500 text-[10px] font-bold uppercase tracking-widest mb-1">CPU Pts</div>
-                           <div className={`text-5xl font-black ${ai.scores.total > human.scores.total ? 'text-red-400' : 'text-stone-300'}`}>
+                           <div className="text-stone-500 text-[10px] font-black uppercase tracking-[0.3em] mb-2">House</div>
+                           <div className={`text-6xl font-black ${ai.scores.total > human.scores.total ? 'text-rose-400' : 'text-stone-300'}`}>
                                {ai.scores.total}
                            </div>
                        </div>
                    </div>
                    
-                   <div className="flex flex-col items-center gap-2 scale-110">
-                        <div className="flex items-center gap-2 bg-black/40 px-3 py-1 rounded-md border border-white/5 mb-1">
-                            <Swords size={12} className="text-stone-500" />
-                            <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Session: {stats.humanWins}W - {stats.aiWins}W</span>
-                        </div>
+                   <div className="flex flex-col items-center gap-3 scale-110">
                         {lastWinAmount !== null && (
-                            <div className={`text-4xl font-black drop-shadow-2xl ${lastWinAmount > 0 ? 'text-green-400' : lastWinAmount < 0 ? 'text-red-500' : 'text-stone-400'}`}>
+                            <div className={`text-5xl font-black drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] ${lastWinAmount > 0 ? 'text-emerald-400' : lastWinAmount < 0 ? 'text-rose-400' : 'text-stone-400'}`}>
                                 {lastWinAmount > 0 ? '+' : ''}${lastWinAmount.toLocaleString()}
                             </div>
                         )}
-                        <div className="text-stone-500 text-[10px] font-black uppercase tracking-[0.3em] opacity-80">
-                            {lastWinAmount !== null && lastWinAmount > 0 ? 'Tournament Payout' : lastWinAmount === 0 ? 'Push - Pot Split' : 'Loss - Pot Lost'}
+                        <div className="text-[#d4af37] text-[10px] font-black uppercase tracking-[0.4em] opacity-80">
+                            {lastWinAmount !== null && lastWinAmount > 0 ? 'Winnings Collected' : lastWinAmount === 0 ? 'Push - Stakes Returned' : 'Stack Lost'}
                         </div>
                    </div>
 
                    <button 
                       onClick={startBetting}
-                      className="group flex items-center gap-3 px-12 py-4 bg-yellow-500 hover:bg-yellow-400 text-stone-900 font-black rounded-full shadow-2xl transition-all hover:scale-105 active:scale-95"
+                      className="group flex items-center gap-4 px-14 py-5 bg-gradient-to-b from-[#e7c25d] to-[#d4af37] text-stone-900 font-black rounded-full shadow-[0_15px_30px_rgba(212,175,55,0.4)] transition-all hover:scale-110 active:scale-95"
                    >
-                       <RefreshCw size={20} className="group-hover:rotate-180 transition-transform duration-700" />
-                       {roundCount > TOTAL_ROUNDS ? 'FINAL STANDINGS' : 'CONTINUE SERIES'}
+                       <RefreshCw size={24} className="group-hover:rotate-180 transition-transform duration-700" />
+                       <span className="text-lg uppercase tracking-widest">{roundCount > TOTAL_ROUNDS ? 'NEW SERIES' : 'CONTINUE'}</span>
                    </button>
                </div>
            )}
         </div>
 
         {/* Player Board */}
-        <div className="relative">
-             <div className="absolute -top-3 left-4 text-xs font-bold text-stone-400 uppercase tracking-widest bg-[#1a3c28] px-2 z-10">
-                Your Table
+        <div className="relative mb-20">
+             <div className="absolute -top-3 left-6 text-[10px] font-black text-emerald-400/60 uppercase tracking-[0.3em] bg-[#0c2a1c] px-3 z-10 border border-emerald-400/20 rounded-full">
+                Player Stack
              </div>
              <Board 
                 board={human.board} 
@@ -521,22 +531,22 @@ const App: React.FC = () => {
                 isWinner={winnerFlags}
              />
              {phase === 'PLACEMENT' || phase === 'DRAWING' ? (
-                <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20 text-yellow-400 text-xs font-bold shadow-lg">
-                    <Coins size={12} />
+                <div className="absolute top-2 right-4 flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 text-emerald-400 text-[10px] font-black shadow-lg backdrop-blur-md">
+                    <Coins size={10} />
                     YOUR STAKE: ${humanBet}
                 </div>
              ) : null}
         </div>
       </div>
       
-      <footer className="w-full max-w-4xl px-4 mt-6 flex justify-between text-[10px] text-stone-500 font-bold uppercase tracking-[0.2em] opacity-40">
-          <div className="flex gap-6">
-             <div>OFC TOURNAMENT SERIES</div>
-             <div className="hidden sm:block">INITIAL AI BUDGET: $1,000</div>
+      <footer className="w-full max-w-5xl px-6 py-6 mt-auto flex flex-wrap justify-between text-[10px] text-stone-500 font-black uppercase tracking-[0.3em] z-20">
+          <div className="flex gap-8">
+             <div className="opacity-40">OFC POKER TOURNAMENT</div>
+             <div className="hidden sm:block text-[#d4af37]/40 tracking-widest">VIP TABLE #042</div>
           </div>
-          <div className="flex gap-6 items-center">
-             <div className="flex items-center gap-2"><Settings2 size={12} /> RECORD: {stats.humanWins}W / {stats.aiWins}L</div>
-             <div className="text-stone-300">AI OBLIGATION REMAINING: ${aiRemainingToBet}</div>
+          <div className="flex gap-8 items-center">
+             <div className="flex items-center gap-2 text-stone-400/60"><Settings2 size={12} /> STATS: {stats.humanWins}W - {stats.aiWins}L</div>
+             <div className="text-[#d4af37]/60">HOUSE OBLIGATION: ${aiRemainingToBet}</div>
           </div>
       </footer>
     </div>

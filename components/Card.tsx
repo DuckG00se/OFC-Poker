@@ -49,23 +49,26 @@ const Card: React.FC<CardProps> = ({
       draggable={draggable}
       onDragStart={handleDragStart}
       className={`
-        relative bg-white rounded-lg shadow-md border-2 select-none transition-all duration-150
-        ${selected ? 'border-yellow-400 -translate-y-2 shadow-xl ring-2 ring-yellow-400' : 'border-slate-300 hover:border-slate-400'}
+        relative bg-white rounded-lg shadow-md border-2 select-none transition-all duration-300 ease-out overflow-visible
+        ${selected ? 'border-[#d4af37] -translate-y-4 shadow-2xl ring-2 ring-[#d4af37] z-30' : 'border-slate-300 hover:border-slate-400'}
         ${small ? 'w-10 h-14' : 'w-16 h-24 sm:w-20 sm:h-28'}
         flex flex-col items-center justify-between p-1 cursor-pointer
         ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}
         ${className}
       `}
     >
-      <div className={`w-full text-left font-bold leading-none pl-1 ${small ? 'text-xs' : 'text-lg'} ${isRed ? 'text-red-600' : 'text-slate-900'}`}>
+      <div className={`w-full text-left font-black leading-none pl-1 ${small ? 'text-[10px]' : 'text-lg'} ${isRed ? 'text-red-600' : 'text-slate-900'}`}>
         {rankDisplay}
       </div>
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center pointer-events-none">
         <SuitIcon />
       </div>
-      <div className={`w-full text-right font-bold leading-none pr-1 ${small ? 'text-xs' : 'text-lg'} ${isRed ? 'text-red-600' : 'text-slate-900'} rotate-180`}>
+      <div className={`w-full text-right font-black leading-none pr-1 ${small ? 'text-[10px]' : 'text-lg'} ${isRed ? 'text-red-600' : 'text-slate-900'} rotate-180`}>
         {rankDisplay}
       </div>
+      
+      {/* Gloss Effect overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none rounded-lg opacity-30"></div>
     </div>
   );
 };
