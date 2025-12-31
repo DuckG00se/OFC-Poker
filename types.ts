@@ -26,7 +26,7 @@ export interface PlayerState {
   };
 }
 
-export type Phase = 'START' | 'INITIAL_DEAL' | 'PLACEMENT' | 'DRAWING' | 'SCORING' | 'GAME_OVER';
+export type Phase = 'START' | 'BETTING' | 'INITIAL_DEAL' | 'PLACEMENT' | 'DRAWING' | 'SCORING' | 'GAME_OVER';
 
 export enum HandRank {
   HighCard = 0,
