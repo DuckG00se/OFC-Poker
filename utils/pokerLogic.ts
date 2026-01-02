@@ -1,5 +1,6 @@
 import { Card, Suit, Rank, HandRank, HandEvaluation, PlayerBoard } from '../types';
-import { SUITS, RANKS, ROW_SIZE } from '../constants';
+// Add RANK_NAMES to imports
+import { SUITS, RANKS, ROW_SIZE, RANK_NAMES } from '../constants';
 
 export const createDeck = (): Card[] => {
   const deck: Card[] = [];
@@ -66,28 +67,30 @@ export const evaluateHand = (cards: Card[], isFrontRow: boolean = false): HandEv
       }
   }
 
+  // Check for Draws (Helper for real-time UI)
+  const isFlushDraw = !isFrontRow && suits.length < 5 && suits.length >= 3 && suits.every(s => s === suits[0]);
+
   // --- Hand Detection ---
   
   // Royal / Straight Flush
   if (isFlush && isStraight) {
       if (straightHigh === 14 && sorted[0].rank === 14 && sorted[1].rank === 13) { 
-        // Rudimentary check, but in 5 cards, if flush + straight and high is Ace, it's Royal
         return { rank: HandRank.RoyalFlush, value: 14, name: 'Royal Flush' };
       }
       return { rank: HandRank.StraightFlush, value: straightHigh, name: 'Straight Flush' };
   }
 
   // Quads
-  if (groups[0].count === 4) {
+  if (groups[0]?.count === 4) {
       return { 
           rank: HandRank.Quads, 
-          value: groups[0].rank * 100 + groups[1].rank, 
+          value: groups[0].rank * 100 + (groups[1]?.rank || 0), 
           name: 'Four of a Kind' 
       };
   }
 
   // Full House
-  if (groups[0].count === 3 && groups[1].count >= 2) {
+  if (groups[0]?.count === 3 && groups[1]?.count >= 2) {
       return { 
           rank: HandRank.FullHouse, 
           value: groups[0].rank * 100 + groups[1].rank, 
@@ -97,7 +100,6 @@ export const evaluateHand = (cards: Card[], isFrontRow: boolean = false): HandEv
 
   // Flush
   if (isFlush) {
-      // Value based on high cards in order
       let val = 0;
       sorted.forEach((c, i) => val += c.rank * Math.pow(15, 4 - i));
       return { rank: HandRank.Flush, value: val, name: 'Flush' };
@@ -109,17 +111,16 @@ export const evaluateHand = (cards: Card[], isFrontRow: boolean = false): HandEv
   }
 
   // Trips
-  if (groups[0].count === 3) {
+  if (groups[0]?.count === 3) {
       let val = groups[0].rank * 100000;
-      // Add kickers
       const kickers = sorted.filter(c => c.rank !== groups[0].rank);
-      val += kickers[0]?.rank * 100 || 0;
-      val += kickers[1]?.rank || 0;
+      val += (kickers[0]?.rank || 0) * 100;
+      val += (kickers[1]?.rank || 0);
       return { rank: HandRank.Trips, value: val, name: 'Three of a Kind' };
   }
 
   // Two Pair
-  if (groups[0].count === 2 && groups[1].count === 2) {
+  if (groups[0]?.count === 2 && groups[1]?.count === 2) {
       let val = groups[0].rank * 10000 + groups[1].rank * 100;
       const kicker = sorted.find(c => c.rank !== groups[0].rank && c.rank !== groups[1].rank);
       val += kicker?.rank || 0;
@@ -127,17 +128,26 @@ export const evaluateHand = (cards: Card[], isFrontRow: boolean = false): HandEv
   }
 
   // Pair
-  if (groups[0].count === 2) {
+  if (groups[0]?.count === 2) {
       let val = groups[0].rank * 100000;
       const kickers = sorted.filter(c => c.rank !== groups[0].rank);
       kickers.forEach((k, i) => val += k.rank * Math.pow(15, 3 - i));
-      return { rank: HandRank.Pair, value: val, name: 'Pair' };
+      return { rank: HandRank.Pair, value: val, name: `Pair of ${sorted.find(c => c.rank === groups[0].rank)?.rank === 11 ? 'Jacks' : sorted.find(c => c.rank === groups[0].rank)?.rank === 12 ? 'Queens' : sorted.find(c => c.rank === groups[0].rank)?.rank === 13 ? 'Kings' : sorted.find(c => c.rank === groups[0].rank)?.rank === 14 ? 'Aces' : groups[0].rank + 's'}` };
   }
 
-  // High Card
+  // High Card / Draws
   let val = 0;
   sorted.forEach((c, i) => val += c.rank * Math.pow(15, 4 - i));
-  return { rank: HandRank.HighCard, value: val, name: 'High Card' };
+  
+  let name = 'High Card';
+  if (isFlushDraw) name = 'Flush Draw';
+  else if (cards.length > 0) {
+      // Fix: Ensure RANK_NAMES is imported
+      const rankName = RANK_NAMES[sorted[0].rank] || sorted[0].rank.toString();
+      name = `${rankName} High`;
+  }
+
+  return { rank: HandRank.HighCard, value: val, name };
 };
 
 // Returns > 0 if A wins, < 0 if B wins, 0 if tie
@@ -157,18 +167,13 @@ export const isBoardFull = (board: PlayerBoard): boolean => {
 };
 
 export const checkFoul = (board: PlayerBoard): boolean => {
-    // Helper to get real cards
     const getCards = (row: (Card|null)[]) => row.filter((c): c is Card => c !== null);
     
-    // If board not full, technically shouldn't check foul yet, but we will check at end
     const front = evaluateHand(getCards(board.front), true);
     const mid = evaluateHand(getCards(board.mid), false);
     const back = evaluateHand(getCards(board.back), false);
 
-    // Rule: Back >= Mid >= Front
-    // Compare Back vs Mid
     if (compareHands(back, mid) < 0) return true;
-    // Compare Mid vs Front
     if (compareHands(mid, front) < 0) return true;
 
     return false;

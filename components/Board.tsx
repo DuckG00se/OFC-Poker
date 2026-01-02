@@ -20,7 +20,8 @@ const Row: React.FC<{
   onDrop: (cardId: string, idx: number) => void;
   highlight: boolean;
   isWinner?: boolean;
-}> = ({ cards, rowName, onClick, onDrop, highlight, isWinner }) => {
+  evaluation?: HandEvaluation;
+}> = ({ cards, rowName, onClick, onDrop, highlight, isWinner, evaluation }) => {
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   const handleDragOver = (e: React.DragEvent, idx: number) => {
@@ -41,17 +42,24 @@ const Row: React.FC<{
       onDrop(cardId, idx);
     }
   };
+
+  const hasCards = cards.some(c => c !== null);
   
   return (
     <div className={`
       flex gap-2 sm:gap-4 justify-center items-center my-2 p-2 rounded-xl transition-all duration-300 relative
       ${isWinner ? 'bg-[#d4af37]/5 ring-1 ring-[#d4af37]/30 shadow-[0_0_20px_rgba(212,175,55,0.1)]' : ''}
     `}>
-      <div className="w-16 text-right pr-2 hidden sm:block">
+      <div className="w-20 text-right pr-2 hidden sm:flex flex-col items-end justify-center">
         <div className={`uppercase text-[9px] font-black tracking-[0.2em] ${isWinner ? 'text-[#d4af37]' : 'text-stone-500'}`}>{rowName}</div>
+        {hasCards && evaluation && evaluation.name !== 'Empty' && (
+          <div className="text-[8px] font-bold text-[#d4af37]/80 uppercase tracking-tighter mt-0.5 leading-tight animate-in fade-in slide-in-from-right-1">
+            {evaluation.name}
+          </div>
+        )}
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 relative">
         {cards.map((card, idx) => (
           <div 
             key={`${rowName}-${idx}`} 
@@ -108,6 +116,7 @@ const Board: React.FC<BoardProps> = ({ board, isHuman, onSlotClick, onSlotDrop, 
         onDrop={(cardId, idx) => onSlotDrop && onSlotDrop(cardId, 'front', idx)}
         highlight={!!highlightEmpty}
         isWinner={isWinner?.front}
+        evaluation={evaluations?.front}
       />
       <div className="w-[80%] h-px bg-white/5 mx-auto"></div>
       <Row 
@@ -117,6 +126,7 @@ const Board: React.FC<BoardProps> = ({ board, isHuman, onSlotClick, onSlotDrop, 
         onDrop={(cardId, idx) => onSlotDrop && onSlotDrop(cardId, 'mid', idx)}
         highlight={!!highlightEmpty}
         isWinner={isWinner?.mid}
+        evaluation={evaluations?.mid}
       />
       <div className="w-[80%] h-px bg-white/5 mx-auto"></div>
       <Row 
@@ -126,6 +136,7 @@ const Board: React.FC<BoardProps> = ({ board, isHuman, onSlotClick, onSlotDrop, 
         onDrop={(cardId, idx) => onSlotDrop && onSlotDrop(cardId, 'back', idx)}
         highlight={!!highlightEmpty}
         isWinner={isWinner?.back}
+        evaluation={evaluations?.back}
       />
     </div>
   );

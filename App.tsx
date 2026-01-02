@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card as CardType, PlayerState, Phase, PlayerBoard, HandEvaluation } from './types';
 import { createDeck, shuffleDeck, isBoardFull, checkFoul, evaluateHand, compareHands } from './utils/pokerLogic';
 import { performAIMove } from './utils/aiLogic';
@@ -35,9 +35,19 @@ const App: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   
   const [aiEvaluations, setAiEvaluations] = useState<{front:HandEvaluation, mid:HandEvaluation, back:HandEvaluation} | undefined>(undefined);
-  const [humanEvaluations, setHumanEvaluations] = useState<{front:HandEvaluation, mid:HandEvaluation, back:HandEvaluation} | undefined>(undefined);
+  const [humanEvaluationsState, setHumanEvaluationsState] = useState<{front:HandEvaluation, mid:HandEvaluation, back:HandEvaluation} | undefined>(undefined);
   const [winnerFlags, setWinnerFlags] = useState<{front: boolean, mid: boolean, back: boolean} | undefined>(undefined);
   
+  // Real-time human evaluations
+  const currentHumanEvaluations = useMemo(() => {
+    const getReal = (cards: (CardType|null)[]) => cards.filter((c): c is CardType => c !== null);
+    return {
+      front: evaluateHand(getReal(human.board.front), true),
+      mid: evaluateHand(getReal(human.board.mid), false),
+      back: evaluateHand(getReal(human.board.back), false)
+    };
+  }, [human.board]);
+
   // Banking & Tournament State
   const [roundCount, setRoundCount] = useState(1);
   const [humanBalance, setHumanBalance] = useState(INITIAL_CAPITAL);
@@ -116,7 +126,7 @@ const App: React.FC = () => {
     setHuman(INITIAL_PLAYER_STATE);
     setAi(INITIAL_PLAYER_STATE);
     setAiEvaluations(undefined);
-    setHumanEvaluations(undefined);
+    setHumanEvaluationsState(undefined);
     setWinnerFlags(undefined);
     
     const humanCards = newDeck.slice(0, 5);
@@ -202,7 +212,8 @@ const App: React.FC = () => {
       const hFront = evaluateHand(getReal(human.board.front), true);
       const hMid = evaluateHand(getReal(human.board.mid), false);
       const hBack = evaluateHand(getReal(human.board.back), false);
-      setHumanEvaluations({ front: hFront, mid: hMid, back: hBack });
+      setHumanEvaluationsState({ front: hFront, mid: hMid, back: hBack });
+      
       const aiFront = evaluateHand(getReal(ai.board.front), true);
       const aiMid = evaluateHand(getReal(ai.board.mid), false);
       const aiBack = evaluateHand(getReal(ai.board.back), false);
@@ -526,7 +537,7 @@ const App: React.FC = () => {
                 onSlotClick={handleSlotClick}
                 onSlotDrop={handleSlotDrop}
                 highlightEmpty={!!selectedCardId || isDragging}
-                evaluations={humanEvaluations}
+                evaluations={currentHumanEvaluations}
                 fouled={human.fouled}
                 isWinner={winnerFlags}
              />
