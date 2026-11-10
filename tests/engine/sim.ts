@@ -1,7 +1,7 @@
 import { chooseTurn, planToActions, type TurnPlan } from '../../src/ai';
 import {
   DEFAULT_CONFIG,
-  createRng,
+  type Difficulty,
   gameReducer,
   initialGameState,
   viewFor,
@@ -26,19 +26,30 @@ export { planToActions };
 export const playPlan = (state: GameState, seat: Seat, plan: TurnPlan): GameState =>
   planToActions(seat, plan).reduce(gameReducer, state);
 
-/** Plays the current turn with the AI. */
-export const playAiTurn = (state: GameState, rng: () => number): GameState => {
+/** Plays the current turn with the AI (Easy by default: fast, and good enough for flow tests). */
+export const playAiTurn = (
+  state: GameState,
+  seed: string,
+  difficulty: Difficulty = 'easy',
+): GameState => {
   const turn = state.turn;
   if (!turn) return state;
-  return playPlan(state, turn.seat, chooseTurn(viewFor(state, turn.seat), rng));
+  const plan = chooseTurn(viewFor(state, turn.seat), {
+    difficulty,
+    seed: `${seed}#${turn.seat}#${turn.street}`,
+  });
+  return playPlan(state, turn.seat, plan);
 };
 
 /** Plays a whole hand with the AI on both seats. */
-export const playHand = (setup: HandSetup, aiSeed = 'sim'): GameState => {
-  const rng = createRng(aiSeed + setup.seed);
+export const playHand = (
+  setup: HandSetup,
+  aiSeed = 'sim',
+  difficulty: Difficulty = 'easy',
+): GameState => {
   let state = start(setup);
   for (let guard = 0; state.phase === 'placing' && guard < 100; guard++) {
-    state = playAiTurn(state, rng);
+    state = playAiTurn(state, aiSeed + setup.seed, difficulty);
   }
   return state;
 };

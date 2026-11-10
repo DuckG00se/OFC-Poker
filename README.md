@@ -2,7 +2,7 @@
 
 Single-player **Open Face Chinese Poker** against a CPU opponent. React 18 + TypeScript + Vite + Tailwind CSS v4, deployed to Cloudflare with `wrangler`.
 
-> Work in progress: Phase 1 (rules engine and foundation) is complete. See [Roadmap](#roadmap).
+> Work in progress: Phases 1 (rules engine) and 2 (Monte Carlo CPU) are complete. See [Roadmap](#roadmap).
 
 ## Run, test, deploy
 
@@ -27,7 +27,8 @@ src/
     reducer    the state machine: dealing, turns, staging/undo, scoring
     rng, deck  seeded shuffling (same seed = same deal)
     session    bankroll, dealer button, Fantasyland carry-over
-  ai/          CPU opponent (sees only what a player may see)
+  ai/          CPU opponent: heuristic, Monte Carlo search, Fantasyland solver, personas.
+               Runs in a Web Worker; sees only what a player may see.
   state/       React glue: app reducer + the one hook that owns timers
   components/  Rendering only; they dispatch actions
 tests/         Vitest suites for everything above
@@ -85,14 +86,45 @@ These follow the most common online-OFC behaviour:
 * Fantasyland royalties are paid like any other hand.
 * The seed behind every deal is shown in the header and a hand can be replayed from it.
 
-## Current CPU opponent
+## The CPU opponent
 
-A one-step heuristic: it scores every legal placement (and discard, in Pineapple) and picks the best, weighting a safe row order over greedy front pairs. In simulation it fouls about 17-27% of hands versus ~70% for random placement. It solves Fantasyland hands by searching the best royalty arrangement. Phase 2 replaces this with a Monte Carlo opponent.
+Pick a level in the settings (before a hand, or between hands). Each level has its own name and personality, and can explain some of its moves ("Why" toggle above the CPU's board).
+
+| Level  | Name          | How it plays                                                                                  |
+|--------|---------------|-----------------------------------------------------------------------------------------------|
+| Easy   | Lucky Lou     | One-step heuristic with random jitter. Makes mistakes (fouls ~35-40% of hands).               |
+| Medium | Madame Vega   | Monte Carlo over its 3 best placements, 12 simulated futures each. Fouls ~10-15%.             |
+| Hard   | The Professor | Monte Carlo over up to 11 placements (including Fantasyland-seeking ones), 240 futures each.  |
+
+**How the Monte Carlo search works** (`src/ai/montecarlo.ts`)
+
+* It shortlists placements with the heuristic, then simulates random futures for each one. Only cards the CPU can't see are drawn: its own board, hand and discards, and everything visible on your board, are dead cards. Your hidden Pineapple discards are not known to it.
+* Both players are completed with the heuristic as a stand-in playout policy, then scored exactly with the real rules. The value of a placement is the average of points, royalties, foul penalties and Fantasyland equity.
+* Every placement faces the same simulated futures (common random numbers), and clearly losing placements are dropped halfway, so few simulations still rank placements reliably.
+* Fantasyland hands (14-17 cards) are solved exactly by a dedicated royalty-maximising search.
+* The thinking runs in a Web Worker (`src/ai/worker.ts`), started the moment the CPU's turn begins, with a short minimum delay so pacing feels natural. If workers are unavailable the same code runs on the main thread.
+
+**Measured strength** (points per hand, with standard error; seats swapped; `scripts/bench-ai.ts`):
+
+| Match                    | Classic        | Pineapple      |
+|--------------------------|----------------|----------------|
+| Medium vs Easy           | +2.7 (0.35)    | +2.5 (0.73)    |
+| Hard vs Medium           | +1.0 (0.42)    | not measured   |
+| Hard vs Easy             | +3.4 (0.60)    | +7.3 (0.93)    |
+
+Fouls per hand: Easy ~35-40%, Medium ~10-15%, Hard ~2-7%. Fantasyland shows up mainly in Pineapple (Hard reaches it in ~8% of hands). In Classic, the gap between Medium and Hard is modest because the playout policy, not the number of simulations, limits strength there.
+
+To reproduce:
+
+```bash
+npx vite-node scripts/bench-ai.ts hard medium 12 10 classic   # A B sessions handsPerSession variant
+PARAMS_A='{"sims":60}' npx vite-node scripts/bench-ai.ts medium easy 20 10   # override sim settings
+```
 
 ## Roadmap
 
 1. ✅ **Foundation and correctness:** pure engine, real OFC rules, Pineapple, Fantasyland, tests, clean tooling.
-2. Monte Carlo CPU with three difficulty levels, running in a Web Worker.
+2. ✅ **Monte Carlo CPU:** three levels, Web Worker, names and personalities, optional move explanations.
 3. Game feel: animation, sound, drag and touch input, helpers, responsive polish.
 4. Settings, saved games and stats, hand replay, tutorial, achievements, PWA.
 5. Lighthouse pass, deployment polish, screenshots.

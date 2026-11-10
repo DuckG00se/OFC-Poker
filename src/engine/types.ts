@@ -24,9 +24,13 @@ export type Variant = 'classic' | 'pineapple';
 /** off = no Fantasyland; flat = always 14 cards; progressive = 14/15/16/17 by front hand. */
 export type FantasylandMode = 'off' | 'flat' | 'progressive';
 
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
 export interface GameConfig {
   variant: Variant;
   fantasyland: FantasylandMode;
+  /** How strong the CPU opponent plays. */
+  difficulty: Difficulty;
   /** Value of one point. Payout = points * stake. */
   stake: number;
 }
@@ -34,6 +38,7 @@ export interface GameConfig {
 export const DEFAULT_CONFIG: GameConfig = {
   variant: 'classic',
   fantasyland: 'progressive',
+  difficulty: 'medium',
   stake: 5,
 };
 

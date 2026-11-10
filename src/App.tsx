@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { Check, Play } from 'lucide-react';
 import BoardView from './components/BoardView';
+import CpuBadge from './components/CpuBadge';
 import Header from './components/Header';
 import HandTray from './components/HandTray';
 import ResultPanel from './components/ResultPanel';
 import SettingsPanel from './components/SettingsPanel';
+import { personaFor, quipForResult, quipForStart } from './ai';
 import { ROW_NAMES, evaluateRow, otherSeat, type RowEval, type RowName } from './engine';
 import type { AppState } from './state/appReducer';
 import { useGame } from './state/useGame';
@@ -19,6 +21,7 @@ const App: React.FC<AppProps> = ({ initialState }) => {
   const { game, session } = api;
   const [selectedRaw, setSelectedRaw] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [hintsOn, setHintsOn] = useState(true);
 
   const humanBoard = game.seats.human.board;
   const liveEvals = useMemo<Record<RowName, RowEval>>(
@@ -48,6 +51,22 @@ const App: React.FC<AppProps> = ({ initialState }) => {
   const result = game.result;
   const aiHidden = game.phase === 'placing' && game.seats.ai.fantasyland > 0;
 
+  const config = game.setup?.config ?? session.config;
+  const persona = personaFor(config.difficulty);
+  const handSeed = game.setup?.seed ?? '';
+  const aiHasPlayed = game.seats.ai.street > 0;
+  const quip =
+    scored && result
+      ? quipForResult(persona, result, game.fantasylandNext.ai, handSeed)
+      : game.phase === 'placing' && !aiHasPlayed
+        ? quipForStart(persona, handSeed)
+        : null;
+  // Move hints belong to the hand in progress; once it is scored the CPU reacts to the result.
+  const hint =
+    game.phase === 'placing' && api.aiNote && api.aiNote.handSeed === handSeed
+      ? api.aiNote.text
+      : null;
+
   const placeOrMove = (cardId: string, row: RowName) => {
     if (stagedIds.has(cardId)) api.move(cardId, row);
     else api.place(cardId, row);
@@ -59,7 +78,9 @@ const App: React.FC<AppProps> = ({ initialState }) => {
     if (game.phase === 'scored') return 'Hand complete.';
     if (!turn) return '';
     if (turn.seat === 'ai') {
-      return game.seats.ai.fantasyland > 0 ? 'CPU is in Fantasyland…' : 'CPU is thinking…';
+      return game.seats.ai.fantasyland > 0
+        ? `${persona.name} is in Fantasyland…`
+        : `${persona.name} is thinking…`;
     }
     const { place, discard } = turn.need;
     const left = place - turn.placed.length;
@@ -80,10 +101,17 @@ const App: React.FC<AppProps> = ({ initialState }) => {
       <Header session={session} game={game} />
 
       <main className="relative z-10 flex w-full max-w-3xl flex-1 flex-col gap-4 px-2 py-4 sm:px-4">
-        <section aria-label="CPU board" className="relative">
-          <div className="absolute -top-2.5 left-5 z-10 rounded-full border border-rose-400/20 bg-[#0c2a1c] px-3 text-[10px] font-black uppercase tracking-[0.3em] text-rose-400/70">
-            The House (CPU){game.setup?.button === 'ai' ? ' · D' : ''}
-          </div>
+        <section aria-label="CPU board" className="flex flex-col gap-2">
+          <CpuBadge
+            persona={persona}
+            difficulty={config.difficulty}
+            isDealer={game.setup?.button === 'ai'}
+            thinking={api.aiThinking}
+            quip={quip}
+            hint={hint}
+            hintsOn={hintsOn}
+            onToggleHints={() => setHintsOn((on) => !on)}
+          />
           <BoardView
             board={game.seats.ai.board}
             hidden={aiHidden}

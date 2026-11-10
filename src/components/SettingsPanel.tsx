@@ -1,5 +1,5 @@
 import React from 'react';
-import type { FantasylandMode, GameConfig, Variant } from '../engine';
+import type { Difficulty, FantasylandMode, GameConfig, Variant } from '../engine';
 
 const STAKES = [1, 5, 10, 25, 50];
 
@@ -62,6 +62,16 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange }) => (
         { value: 'off', label: 'Off' },
         { value: 'flat', label: '14 cards', hint: 'QQ+ in front earns 14 cards' },
         { value: 'progressive', label: 'Progressive', hint: 'QQ 14, KK 15, AA 16, trips 17' },
+      ]}
+    />
+    <Segmented<Difficulty>
+      label="CPU level"
+      value={config.difficulty}
+      onChange={(difficulty) => onChange({ difficulty })}
+      options={[
+        { value: 'easy', label: 'Easy', hint: 'Plays by feel and makes mistakes' },
+        { value: 'medium', label: 'Medium', hint: 'Simulates a few outcomes per move' },
+        { value: 'hard', label: 'Hard', hint: 'Simulates many outcomes and chases Fantasyland' },
       ]}
     />
     <Segmented<number>

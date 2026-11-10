@@ -1,7 +1,6 @@
 import {
   HandCategory,
   ROW_SIZE,
-  checkFoul,
   compareRows,
   evaluateRow,
   isBoardComplete,
@@ -44,9 +43,13 @@ const straightWindowCount = (cards: readonly Card[]): number => {
 };
 
 /** Rough value of a row: what it already is plus what it is likely to become. */
-const rowPotential = (cards: readonly Card[], row: RowName): number => {
+const rowPotential = (
+  cards: readonly Card[],
+  row: RowName,
+  ev: RowEval,
+  frontWeight: number,
+): number => {
   if (cards.length === 0) return 0;
-  const ev = evaluateRow(cards, row);
   const empty = ROW_SIZE[row] - cards.length;
   const top = (ev.tiebreak[0] ?? 0) / 14;
 
@@ -54,9 +57,9 @@ const rowPotential = (cards: readonly Card[], row: RowName): number => {
     let value = top * 0.6;
     if (ev.category === HandCategory.Pair) {
       const rank = ev.tiebreak[0] ?? 0;
-      value += FRONT_MADE_HAND_WEIGHT * (1.6 + rowRoyalty(ev, 'front') + (rank >= 12 ? 3 : 0)); // QQ+ also chases Fantasyland
+      value += frontWeight * (1.6 + rowRoyalty(ev, 'front') + (rank >= 12 ? 3 : 0)); // QQ+ also chases Fantasyland
     } else if (ev.category === HandCategory.Trips) {
-      value += FRONT_MADE_HAND_WEIGHT * (4 + rowRoyalty(ev, 'front'));
+      value += frontWeight * (4 + rowRoyalty(ev, 'front'));
     }
     return value;
   }
@@ -87,13 +90,15 @@ const strength = (ev: RowEval): number => ev.category + (ev.tiebreak[0] ?? 0) / 
  * the pair goes up early and the rows behind it never catch up. Measured over 150 simulated
  * hands, weighting them at 1.0 fouls ~50% of the time, 0.25 about 19% (random play: 70%).
  */
-const FRONT_MADE_HAND_WEIGHT = 0.25;
+export const FRONT_MADE_HAND_WEIGHT = 0.25;
 
 /** Penalises boards whose rows already point towards a foul (front > mid or mid > back). */
-const orderingPenalty = (board: Board): number => {
-  const front = evaluateRow(board.front, 'front');
-  const mid = evaluateRow(board.mid, 'mid');
-  const back = evaluateRow(board.back, 'back');
+const orderingPenalty = (
+  board: Board,
+  front: RowEval,
+  mid: RowEval,
+  back: RowEval,
+): number => {
   let penalty = 0;
   if (board.front.length > 0 && board.mid.length > 0 && compareRows(front, mid) > 0) {
     penalty += 2.5 + 3 * Math.max(0, strength(front) - strength(mid)) + (board.mid.length >= 4 ? 3 : 0);
@@ -104,14 +109,23 @@ const orderingPenalty = (board: Board): number => {
   return penalty;
 };
 
-/** Heuristic value of a (partial or complete) board. Complete boards that foul score hugely negative. */
-export const scoreBoard = (board: Board): number => {
-  if (isBoardComplete(board) && checkFoul(board)) return FOUL_SCORE;
+/**
+ * Heuristic value of a (partial or complete) board. Complete boards that foul score hugely
+ * negative. `frontWeight` scales how much made front-row hands are worth: the default is
+ * cautious; pass 1 to see the board the way a Fantasyland chaser would.
+ */
+export const scoreBoard = (board: Board, frontWeight: number = FRONT_MADE_HAND_WEIGHT): number => {
+  const front = evaluateRow(board.front, 'front');
+  const mid = evaluateRow(board.mid, 'mid');
+  const back = evaluateRow(board.back, 'back');
+  if (isBoardComplete(board) && (compareRows(back, mid) < 0 || compareRows(mid, front) < 0)) {
+    return FOUL_SCORE;
+  }
   return (
-    rowPotential(board.front, 'front') +
-    rowPotential(board.mid, 'mid') +
-    rowPotential(board.back, 'back') -
-    orderingPenalty(board)
+    rowPotential(board.front, 'front', front, frontWeight) +
+    rowPotential(board.mid, 'mid', mid, frontWeight) +
+    rowPotential(board.back, 'back', back, frontWeight) -
+    orderingPenalty(board, front, mid, back)
   );
 };
 

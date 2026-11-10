@@ -6,6 +6,7 @@ import {
   otherSeat,
   type Board,
   type Card,
+  type DealStep,
   type GameConfig,
   type GameState,
   type Placement,
@@ -32,6 +33,10 @@ export interface PlayerView {
   /** Cards staged for discard this turn. */
   stagedDiscards: readonly Card[];
   oppDiscardCount: number;
+  /** Deals still to come for this seat after the current turn (empty when done). */
+  myRemaining: readonly DealStep[];
+  /** Deals the opponent still has to make; their board is incomplete until they are done. */
+  oppRemaining: readonly DealStep[];
   turn: Turn | null;
   myFantasyland: number;
   oppFantasyland: number;
@@ -58,7 +63,12 @@ export const viewFor = (state: GameState, seat: Seat): PlayerView => {
 
   return {
     seat,
-    config: setup?.config ?? { variant: 'classic', fantasyland: 'off', stake: 1 },
+    config: setup?.config ?? {
+      variant: 'classic',
+      fantasyland: 'off',
+      difficulty: 'medium',
+      stake: 1,
+    },
     myBoard: mine.board,
     oppBoard: oppHidden ? emptyBoard() : theirs.board,
     oppBoardHidden: oppHidden,
@@ -66,6 +76,8 @@ export const viewFor = (state: GameState, seat: Seat): PlayerView => {
     myDiscards: mine.discards,
     stagedDiscards,
     oppDiscardCount: theirs.discards.length,
+    myRemaining: mine.plan.slice(mine.street + (turn && turn.seat === seat ? 1 : 0)),
+    oppRemaining: theirs.plan.slice(theirs.street + (turn && turn.seat === opp ? 1 : 0)),
     turn: turn && turn.seat === seat ? turn : null,
     myFantasyland: mine.fantasyland,
     oppFantasyland: theirs.fantasyland,
@@ -127,4 +139,22 @@ export const legalTurnOptions = (
     assign(0, space, []);
   }
   return options;
+};
+
+/** The board that results from carrying out a set of placements with the cards in hand. */
+export const applyPlacements = (
+  board: Board,
+  held: readonly Card[],
+  placements: readonly Placement[],
+): Board => {
+  const next: Record<RowName, Card[]> = {
+    front: [...board.front],
+    mid: [...board.mid],
+    back: [...board.back],
+  };
+  for (const p of placements) {
+    const card = held.find((c) => c.id === p.cardId);
+    if (card) next[p.row].push(card);
+  }
+  return next;
 };

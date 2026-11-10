@@ -1,16 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { chooseTurn, planToActions } from '../../src/ai';
-import { createRng, viewFor, STARTING_BANKROLL } from '../../src/engine';
+import { viewFor, STARTING_BANKROLL } from '../../src/engine';
 import { appReducer, initialAppState, type AppState } from '../../src/state/appReducer';
 
 /** Plays the current hand to the end with the AI on both seats, through the app reducer. */
 const playOut = (start: AppState): AppState => {
   let app = start;
-  const rng = createRng('app-test');
   for (let guard = 0; app.game.phase === 'placing' && guard < 100; guard++) {
     const turn = app.game.turn;
     if (!turn) break;
-    const plan = chooseTurn(viewFor(app.game, turn.seat), rng);
+    const plan = chooseTurn(viewFor(app.game, turn.seat), {
+      difficulty: 'easy',
+      seed: `app-test#${turn.seat}#${turn.street}`,
+    });
     for (const action of planToActions(turn.seat, plan)) {
       app = appReducer(app, { type: 'GAME', action });
     }

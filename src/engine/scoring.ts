@@ -13,7 +13,8 @@ import {
 export const SCOOP_BONUS = 3;
 export const FOUL_PENALTY = 6; // a scoop: 3 rows + 3 bonus
 
-const scoreSeat = (board: Board): SeatScore => {
+/** Foul check, row evaluations and royalties for one completed board. */
+export const scoreSeat = (board: Board): SeatScore => {
   const fouled = checkFoul(board);
   const evals = {
     front: evaluateRow(board.front, 'front'),

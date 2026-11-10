@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
-import { chooseTurn, planToActions } from '../ai';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { AiClient, planToActions } from '../ai';
 import {
-  createRng,
   randomSeed,
   viewFor,
+  type Difficulty,
   type GameConfig,
   type GameState,
   type RowName,
@@ -11,13 +11,30 @@ import {
 } from '../engine';
 import { appReducer, initialAppState, type AppState } from './appReducer';
 
-/** Pause before the CPU starts a turn, and between each of its moves. */
-const AI_THINK_MS = 700;
+/** Minimum "thinking" time before the CPU moves, so pacing feels natural at every level. */
+const THINK_BASE_MS: Readonly<Record<Difficulty, number>> = { easy: 500, medium: 800, hard: 1100 };
+/** Pause between the CPU's individual placements within one turn. */
 const AI_STEP_MS = 260;
+
+const jitter = (key: string): number => {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 16777619);
+  return (h >>> 0) % 350;
+};
+
+export interface AiNote {
+  text: string;
+  /** Hand the note belongs to, so a stale note never shows on the next hand. */
+  handSeed: string;
+}
 
 export interface GameApi {
   game: GameState;
   session: Session;
+  /** True while the CPU is choosing or making its move. */
+  aiThinking: boolean;
+  /** The CPU's explanation of its latest notable move, if it gave one. */
+  aiNote: AiNote | null;
   place: (cardId: string, row: RowName) => void;
   move: (cardId: string, row: RowName) => void;
   discard: (cardId: string) => void;
@@ -30,15 +47,30 @@ export interface GameApi {
 
 /**
  * Connects the pure game state to React. The only timers in the app live here: the CPU's
- * "thinking" delay and the pacing of its moves. The CPU's plan is decided from the latest
- * state at the moment the timer fires, guarded by the turn it was scheduled for.
+ * "thinking" delay and the pacing of its moves. The CPU decides in a Web Worker, started the
+ * moment its turn begins so thinking overlaps the pause, and everything it was asked is
+ * guarded by the turn it was scheduled for.
  */
 export const useGame = (initial?: AppState): GameApi => {
-  const [app, dispatch] = useReducer(appReducer, undefined, () => initial ?? initialAppState(randomSeed()));
+  const [app, dispatch] = useReducer(
+    appReducer,
+    undefined,
+    () => initial ?? initialAppState(randomSeed()),
+  );
   const { game, session } = app;
+  const [aiNote, setAiNote] = useState<AiNote | null>(null);
 
   const gameRef = useRef(game);
   gameRef.current = game;
+  const clientRef = useRef<AiClient | null>(null);
+
+  useEffect(() => {
+    clientRef.current = new AiClient();
+    return () => {
+      clientRef.current?.dispose();
+      clientRef.current = null;
+    };
+  }, []);
 
   const turn = game.turn;
   const aiTurnKey =
@@ -46,16 +78,24 @@ export const useGame = (initial?: AppState): GameApi => {
 
   useEffect(() => {
     if (aiTurnKey === null) return;
+    const g = gameRef.current;
+    const client = clientRef.current;
+    const setup = g.setup;
+    if (!client || !setup || g.turn?.seat !== 'ai') return;
+
     let cancelled = false;
     const timers: number[] = [];
+    const difficulty = setup.config.difficulty;
+    const wait = new Promise<void>((resolve) => {
+      timers.push(
+        window.setTimeout(resolve, THINK_BASE_MS[difficulty] + jitter(aiTurnKey)),
+      );
+    });
 
-    timers.push(
-      window.setTimeout(() => {
-        const g = gameRef.current;
-        const t = g.turn;
-        if (!t || t.seat !== 'ai' || `${g.setup?.seed}#${t.street}` !== aiTurnKey) return;
-        const rng = createRng(`${aiTurnKey}:ai`);
-        const plan = chooseTurn(viewFor(g, 'ai'), rng);
+    Promise.all([client.choose(viewFor(g, 'ai'), difficulty, `${aiTurnKey}:ai`), wait])
+      .then(([plan]) => {
+        if (cancelled) return;
+        setAiNote(plan.reason ? { text: plan.reason, handSeed: setup.seed } : null);
         planToActions('ai', plan).forEach((action, i) => {
           timers.push(
             window.setTimeout(() => {
@@ -63,12 +103,15 @@ export const useGame = (initial?: AppState): GameApi => {
             }, i * AI_STEP_MS),
           );
         });
-      }, AI_THINK_MS),
-    );
+      })
+      .catch(() => {
+        // Cancelled or the client was disposed: nothing to do.
+      });
 
     return () => {
       cancelled = true;
       timers.forEach(window.clearTimeout);
+      clientRef.current?.cancelPending();
     };
   }, [aiTurnKey]);
 
@@ -95,15 +138,36 @@ export const useGame = (initial?: AppState): GameApi => {
     () => dispatch({ type: 'GAME', action: { type: 'CONFIRM', seat: 'human' } }),
     [],
   );
-  const deal = useCallback(() => dispatch({ type: 'DEAL' }), []);
+  const deal = useCallback(() => {
+    setAiNote(null);
+    dispatch({ type: 'DEAL' });
+  }, []);
   const setConfig = useCallback(
     (patch: Partial<GameConfig>) => dispatch({ type: 'CONFIG', patch }),
     [],
   );
-  const newSession = useCallback(() => dispatch({ type: 'NEW_SESSION', seed: randomSeed() }), []);
+  const newSession = useCallback(() => {
+    setAiNote(null);
+    dispatch({ type: 'NEW_SESSION', seed: randomSeed() });
+  }, []);
+
+  const aiThinking = aiTurnKey !== null;
 
   return useMemo(
-    () => ({ game, session, place, move, discard, undo, confirm, deal, setConfig, newSession }),
-    [game, session, place, move, discard, undo, confirm, deal, setConfig, newSession],
+    () => ({
+      game,
+      session,
+      aiThinking,
+      aiNote,
+      place,
+      move,
+      discard,
+      undo,
+      confirm,
+      deal,
+      setConfig,
+      newSession,
+    }),
+    [game, session, aiThinking, aiNote, place, move, discard, undo, confirm, deal, setConfig, newSession],
   );
 };
