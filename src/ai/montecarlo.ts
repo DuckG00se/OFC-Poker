@@ -1,6 +1,5 @@
 import {
   HandCategory,
-  ROW_NAMES,
   ROW_SIZE,
   evaluateRow,
   legalTurnOptions,
@@ -47,11 +46,14 @@ const withCard = (board: Rows, row: RowName, card: Card): Rows => ({
   [row]: [...board[row], card],
 });
 
+/** Rows in the order ties are settled: a card that fits equally well anywhere goes to the back. */
+const BACK_FIRST: readonly RowName[] = ['back', 'mid', 'front'];
+
 /** Places one card on the row where the heuristic likes the resulting board best. */
 const placeGreedy = (board: Rows, card: Card, frontWeight: number): Rows => {
   let best: Rows | null = null;
   let bestScore = -Infinity;
-  for (const row of ROW_NAMES) {
+  for (const row of BACK_FIRST) {
     if (board[row].length >= ROW_SIZE[row]) continue;
     const next = withCard(board, row, card);
     const score = scoreBoard(next, frontWeight);

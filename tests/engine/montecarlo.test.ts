@@ -14,6 +14,7 @@ import {
   createRng,
   isBoardComplete,
   parseCards,
+  seededDeck,
   type Board,
   type PlayerView,
 } from '../../src/engine';
@@ -109,4 +110,25 @@ describe('simulated playouts', () => {
     const done = completeBoardForTest(start, steps, draws, 0.25);
     expect(isBoardComplete(done)).toBe(true);
   });
+
+  it('opens sensibly: with nothing down, the highest card goes to the back, never the front', () => {
+    // Regression: every row scores the same for a lone card, and ties used to go to the
+    // front row, so playouts opened with an ace up front and fouled about 75% of the time.
+    const empty: Board = { front: [], mid: [], back: [] };
+    const done = completeBoardForTest(empty, [{ deal: 1, place: 1 }], parseCards('As'), 0.25);
+    expect(done.back.map((c) => c.id)).toEqual(['14s']);
+    expect(done.front).toHaveLength(0);
+  });
+
+  it('a sequential opening fouls at about the heuristic rate, not far above it', () => {
+    const steps = [{ deal: 5, place: 5 }, ...Array.from({ length: 8 }, () => ({ deal: 1, place: 1 }))];
+    let fouls = 0;
+    const hands = 120;
+    for (let i = 0; i < hands; i++) {
+      const deck = seededDeck(`opening-${i}`);
+      if (checkFoul(completeBoardForTest({ front: [], mid: [], back: [] }, steps, deck.slice(0, 13), 0.25))) fouls++;
+    }
+    expect(fouls / hands).toBeLessThan(0.45);
+  });
 });
+

@@ -3,6 +3,7 @@ import {
   PERSONAS,
   AiClient,
   chooseTurn,
+  estimateFoulRisk,
   explainPlan,
   personaFor,
   quipForResult,
@@ -111,5 +112,47 @@ describe('AiClient without Web Workers (e.g. tests, old browsers)', () => {
     client.dispose();
     const s = start(setupFor('client2'));
     await expect(client.choose(viewFor(s, 'human'), 'easy', 'x')).rejects.toThrow();
+  });
+});
+
+describe('foul risk estimate', () => {
+  const unseenOf = (b: ReturnType<typeof board>) => {
+    const seen = new Set([...b.front, ...b.mid, ...b.back].map((c) => c.id));
+    return createDeck().filter((c) => !seen.has(c.id));
+  };
+  const single = (n: number) => Array.from({ length: n }, () => ({ deal: 1, place: 1 }));
+
+  it('is high for a board heading for a foul and low for a healthy one', () => {
+    const risky = board('As Ah', '7d 5c', '2s');
+    const healthy = board('2s', '7d 5c', 'As Ah');
+    const riskOf = (b: ReturnType<typeof board>) =>
+      estimateFoulRisk({ board: b, held: [], steps: single(8), unseen: unseenOf(b), sims: 150, seed: 'r' }).risk;
+    expect(riskOf(risky)).toBeGreaterThan(0.6);
+    expect(riskOf(healthy)).toBeLessThan(0.35);
+  });
+
+  it('is exactly 0 or 1 when the board is already complete', () => {
+    const fouled = board('Qs Qh 7d', 'Kc Th 6h 3s 5d', 'Ac 7h 7s 8c 8s');
+    const legal = board('2c 3d 5h', '3h 6d 9s Tc Jc', '4s 4h 8d Qd Qc');
+    const run = (b: ReturnType<typeof board>) =>
+      estimateFoulRisk({ board: b, held: [], steps: [], unseen: unseenOf(b), sims: 10, seed: 'c' }).risk;
+    expect(run(fouled)).toBe(1);
+    expect(run(legal)).toBe(0);
+  });
+
+  it('uses the cards still in hand before drawing random ones', () => {
+    // One slot left in the back row; the held card decides everything.
+    const b = board('2c 3d 5h', 'Ks Kh 9s Tc Jc', 'As Ah 8d 4c');
+    const saved = estimateFoulRisk({ board: b, held: parseCards('Ad'), steps: single(1), unseen: unseenOf(b), sims: 20, seed: 'h' });
+    expect(saved.risk).toBe(0);
+  });
+
+  it('is available through the client', async () => {
+    const client = new AiClient();
+    const b = board('2s', '7d 5c', 'As Ah');
+    const result = await client.foulRisk({ board: b, held: [], steps: single(8), unseen: unseenOf(b), sims: 30, seed: 'x' });
+    expect(result.sims).toBe(30);
+    expect(result.risk).toBeGreaterThanOrEqual(0);
+    client.dispose();
   });
 });

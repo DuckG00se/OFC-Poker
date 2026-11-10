@@ -1,49 +1,87 @@
 import React from 'react';
-import { Coins, Crown } from 'lucide-react';
-import type { GameState, Session } from '../engine';
+import { Coins, Crown, Layers, Settings, Volume2, VolumeX } from 'lucide-react';
 
 interface HeaderProps {
-  session: Session;
-  game: GameState;
+  bankroll: number;
+  stake: number;
+  handNo: number;
+  variant: string;
+  soundOn: boolean;
+  showTracker: boolean;
+  onToggleSound: () => void;
+  onOpenTracker: () => void;
+  onOpenSettings: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ session, game }) => {
-  const config = game.setup?.config ?? session.config;
-  const handNo = game.phase === 'scored' ? session.handNo - 1 : session.handNo;
-  return (
-    <header className="z-20 flex w-full max-w-4xl flex-wrap items-center justify-between gap-3 px-4 pt-3 text-stone-300">
-      <div className="flex items-center gap-2">
-        <Crown size={16} className="text-[#d4af37]" aria-hidden="true" />
-        <span className="text-sm font-black uppercase tracking-[0.2em] text-[#d4af37]">OFC Poker</span>
-      </div>
+const IconButton: React.FC<{
+  label: string;
+  pressed?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}> = ({ label, pressed, onClick, children }) => (
+  <button
+    type="button"
+    aria-label={label}
+    aria-pressed={pressed}
+    title={label}
+    onClick={onClick}
+    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/40 text-stone-300 transition hover:border-[#d4af37]/50 hover:text-[#d4af37]"
+  >
+    {children}
+  </button>
+);
 
-      <div className="flex items-center gap-3 rounded-2xl border border-white/5 bg-black/60 px-4 py-2 text-xs font-bold backdrop-blur-xl">
-        <Coins size={14} className="text-emerald-400" aria-hidden="true" />
-        <span className="font-black text-emerald-400" aria-label="Bankroll">
-          ${session.bankroll.toLocaleString()}
-        </span>
-        <span className="text-stone-600">|</span>
-        <span className="text-stone-400">${config.stake}/pt</span>
+const Header: React.FC<HeaderProps> = ({
+  bankroll,
+  stake,
+  handNo,
+  variant,
+  soundOn,
+  showTracker,
+  onToggleSound,
+  onOpenTracker,
+  onOpenSettings,
+}) => (
+  <header className="ofc-header z-20 flex items-center justify-between gap-2 px-2 pt-2 sm:px-4">
+    <div className="flex min-w-0 items-center gap-1.5">
+      <Crown size={16} className="flex-none text-[#d4af37]" aria-hidden="true" />
+      <div className="min-w-0 leading-tight">
+        <div className="hidden text-xs font-black uppercase tracking-[0.18em] text-[#d4af37] sm:block">
+          OFC Poker
+        </div>
+        <div className="text-[10px] font-black uppercase tracking-widest text-[#d4af37] sm:font-bold sm:text-stone-400">
+          Hand {handNo}
+          <span className="hidden sm:inline"> · </span>
+          <span className="block text-stone-400 sm:inline">{variant}</span>
+        </div>
       </div>
+    </div>
 
-      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-stone-500">
-        <span className="rounded-full border border-white/5 bg-black/40 px-3 py-1">
-          Hand {Math.max(1, handNo)}
-        </span>
-        <span className="rounded-full border border-white/5 bg-black/40 px-3 py-1">
-          {config.variant}
-        </span>
-        {game.setup && (
-          <span
-            className="hidden rounded-full border border-white/5 bg-black/40 px-3 py-1 sm:inline"
-            title="Seed: replays this exact deal"
-          >
-            seed {game.setup.seed.split(':')[1] ? game.setup.seed.slice(0, 6) : game.setup.seed}
-          </span>
-        )}
-      </div>
-    </header>
-  );
-};
+    <div
+      className="flex items-center gap-2 rounded-full border border-white/5 bg-black/60 px-3 py-1.5 text-xs font-bold"
+      aria-label={`Bankroll ${bankroll} dollars, ${stake} dollars per point`}
+    >
+      <Coins size={13} className={bankroll >= 0 ? 'text-emerald-400' : 'text-rose-400'} aria-hidden="true" />
+      <span className={`font-black tabular-nums ${bankroll >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+        {bankroll < 0 ? '-' : ''}${Math.abs(bankroll).toLocaleString()}
+      </span>
+      <span className="text-stone-400">${stake}/pt</span>
+    </div>
+
+    <div className="flex items-center gap-1.5">
+      {showTracker && (
+        <IconButton label="Cards remaining" onClick={onOpenTracker}>
+          <Layers size={16} aria-hidden="true" />
+        </IconButton>
+      )}
+      <IconButton label={soundOn ? 'Mute sound' : 'Turn sound on'} pressed={!soundOn} onClick={onToggleSound}>
+        {soundOn ? <Volume2 size={16} aria-hidden="true" /> : <VolumeX size={16} aria-hidden="true" />}
+      </IconButton>
+      <IconButton label="Settings" onClick={onOpenSettings}>
+        <Settings size={16} aria-hidden="true" />
+      </IconButton>
+    </div>
+  </header>
+);
 
 export default Header;

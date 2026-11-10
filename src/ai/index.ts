@@ -1,3 +1,5 @@
+export { estimateFoulRisk } from './analysis';
+export type { FoulRiskInput, FoulRiskResult } from './analysis';
 export { chooseTurn, EASY_NOISE, HARD_PARAMS, MEDIUM_PARAMS } from './choose';
 export type { ChooseOptions } from './choose';
 export { AiClient } from './client';

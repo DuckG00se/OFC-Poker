@@ -2,7 +2,7 @@
 
 Single-player **Open Face Chinese Poker** against a CPU opponent. React 18 + TypeScript + Vite + Tailwind CSS v4, deployed to Cloudflare with `wrangler`.
 
-> Work in progress: Phases 1 (rules engine) and 2 (Monte Carlo CPU) are complete. See [Roadmap](#roadmap).
+> Work in progress: Phases 1 (rules engine), 2 (Monte Carlo CPU) and 3 (game feel) are complete. See [Roadmap](#roadmap).
 
 ## Run, test, deploy
 
@@ -29,12 +29,53 @@ src/
     session    bankroll, dealer button, Fantasyland carry-over
   ai/          CPU opponent: heuristic, Monte Carlo search, Fantasyland solver, personas.
                Runs in a Web Worker; sees only what a player may see.
-  state/       React glue: app reducer + the one hook that owns timers
+  state/       React glue: app reducer + the hook that owns the CPU's timers
+  ui/          Presentation infrastructure: card flights, pointer drag, keyboard,
+               sound, score reveal, preferences, foul-risk helper
   components/  Rendering only; they dispatch actions
 tests/         Vitest suites for everything above
 ```
 
 The engine is a reducer: `gameReducer(state, action) -> state`. Illegal actions return the *same* state object, so double clicks and late timers are harmless. Every applied action is logged, and `replay(log)` rebuilds a hand exactly. Cards are only ever dealt inside the reducer, so a card can never be dealt twice.
+
+## Playing
+
+### Controls
+
+| Input    | How                                                                                               |
+|----------|---------------------------------------------------------------------------------------------------|
+| Tap      | Tap a card, then tap a row. With one card left in hand it is selected for you.                    |
+| Drag     | Drag a card to a row, to the discard zone, or back to your hand. Works with mouse, finger or pen. |
+| Keyboard | `1` `2` `3` place on front / middle / back · `←` `→` pick a card · `D` discard · `Backspace` undo · `Enter` confirm, skip the score reveal, or deal the next hand · `Esc` clear selection |
+
+Cards you place stay movable until you press **Confirm**: tap one to take it back, drag it to another row, or use **Undo**.
+
+### Helpers (each can be switched off in Settings)
+
+* **Hand names:** what each row currently makes.
+* **Foul warning:** an estimated chance your board ends up fouled, from simulated play-outs of the rest of the hand, plus a red "Foul certain" as soon as no remaining card can save it.
+* **Outs:** live cards that complete a row with one slot left ("Flush 7 outs"), and two-card flush draws. Dead cards are excluded.
+* **Royalty preview:** royalties already locked in.
+* **Cards remaining:** every card in the deck with the dead ones crossed out, and live counts per suit. Opens from the header; always visible on wide screens.
+* **CPU move reasons:** a one-line explanation of some of the CPU's moves.
+
+### Feel
+
+* Cards fly from the deck and flip as they are dealt, glide between hand and board, and the opponent's Fantasyland board flips over at showdown.
+* Scoring is revealed row by row with a running total that counts up; press **Skip** (or `Enter`) to jump to the end.
+* Sound effects are synthesised in the browser (no audio files). Mute from the header. Phones that support it give a light vibration.
+* Animation speed: Normal, Fast or Off.
+
+### Accessibility
+
+* Optional **four-colour deck** (clubs green, diamonds blue); suits are always shown as shapes as well as colours.
+* The operating system's **reduce motion** setting is respected: no card flights, flips or count-ups, and the score appears at once.
+* Fully playable from the keyboard. Cards, rows, slots and dialogs have screen-reader labels, and status changes are announced.
+* Checked with axe-core (WCAG 2 A/AA rules) on the start screen, the table, and the dialogs: no violations.
+
+### Layout
+
+No horizontal scrolling at any size. In portrait the opponent is on top and your board at the bottom; in landscape the boards sit side by side with your hand underneath. Card size follows both the width and the height of the screen, so the whole table fits on one screen from about 390×800 upward. Smaller or very short screens (for example 375×667, or a phone held sideways) scroll vertically.
 
 ## Rules
 
@@ -92,8 +133,8 @@ Pick a level in the settings (before a hand, or between hands). Each level has i
 
 | Level  | Name          | How it plays                                                                                  |
 |--------|---------------|-----------------------------------------------------------------------------------------------|
-| Easy   | Lucky Lou     | One-step heuristic with random jitter. Makes mistakes (fouls ~35-40% of hands).               |
-| Medium | Madame Vega   | Monte Carlo over its 3 best placements, 12 simulated futures each. Fouls ~10-15%.             |
+| Easy   | Lucky Lou     | One-step heuristic with random jitter. Makes mistakes.                                        |
+| Medium | Madame Vega   | Monte Carlo over its 3 best placements, 12 simulated futures each.                            |
 | Hard   | The Professor | Monte Carlo over up to 11 placements (including Fantasyland-seeking ones), 240 futures each.  |
 
 **How the Monte Carlo search works** (`src/ai/montecarlo.ts`)
@@ -108,11 +149,17 @@ Pick a level in the settings (before a hand, or between hands). Each level has i
 
 | Match                    | Classic        | Pineapple      |
 |--------------------------|----------------|----------------|
-| Medium vs Easy           | +2.7 (0.35)    | +2.5 (0.73)    |
-| Hard vs Medium           | +1.0 (0.42)    | not measured   |
-| Hard vs Easy             | +3.4 (0.60)    | +7.3 (0.93)    |
+| Medium vs Easy           | +2.5 (0.36)    | +2.3 (0.71)    |
+| Hard vs Medium           | +1.0 (0.44)    | not measured   |
+| Hard vs Easy             | +3.4 (0.65)    | +7.1 (0.81)    |
 
-Fouls per hand: Easy ~35-40%, Medium ~10-15%, Hard ~2-7%. Fantasyland shows up mainly in Pineapple (Hard reaches it in ~8% of hands). In Classic, the gap between Medium and Hard is modest because the playout policy, not the number of simulations, limits strength there.
+| Fouls per hand | Classic  | Pineapple |
+|----------------|----------|-----------|
+| Easy           | 33-40%   | 16-18%    |
+| Medium         | 12-21%   | about 6%  |
+| Hard           | 7-12%    | about 2%  |
+
+Fantasyland shows up mainly in Pineapple (Hard reaches it in about 7-8% of hands). In Classic, the gap between Medium and Hard is modest because the playout policy, not the number of simulations, limits strength there.
 
 To reproduce:
 
@@ -125,6 +172,6 @@ PARAMS_A='{"sims":60}' npx vite-node scripts/bench-ai.ts medium easy 20 10   # o
 
 1. ✅ **Foundation and correctness:** pure engine, real OFC rules, Pineapple, Fantasyland, tests, clean tooling.
 2. ✅ **Monte Carlo CPU:** three levels, Web Worker, names and personalities, optional move explanations.
-3. Game feel: animation, sound, drag and touch input, helpers, responsive polish.
+3. ✅ **Game feel:** card flights and flips, row-by-row score reveal, tap / drag / keyboard input with undo, live helpers, synthesised sound, responsive layouts, accessibility.
 4. Settings, saved games and stats, hand replay, tutorial, achievements, PWA.
 5. Lighthouse pass, deployment polish, screenshots.

@@ -10,8 +10,8 @@ export const EASY_NOISE = 1.4;
 
 /*
  * Measured with scripts/bench-ai.ts (points per hand, +/- standard error, seats swapped):
- *   Classic:   Medium vs Easy +2.7 (0.35); Hard vs Medium +1.0 (0.42)
- *   Pineapple: Medium vs Easy +2.5 (0.73); Hard vs Easy +7.3 (0.93)
+ *   Classic:   Medium vs Easy +2.5 (0.36); Hard vs Medium +1.0 (0.44)
+ *   Pineapple: Medium vs Easy +2.3 (0.71); Hard vs Easy +7.1 (0.81)
  * Medium is deliberately light: past ~40 simulations the heuristic playout, not the sample
  * size, limits strength in Classic, so extra sims only slow it down without adding a level.
  */

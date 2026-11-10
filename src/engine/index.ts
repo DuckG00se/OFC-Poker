@@ -9,3 +9,4 @@ export * from './plan';
 export * from './reducer';
 export * from './selectors';
 export * from './session';
+export * from './analysis';
