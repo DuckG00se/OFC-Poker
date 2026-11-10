@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+:root {
+  --gold: #d4af37;
+  --gold-soft: #e7c25d;
+  --felt: #061c12;
+
+  /*
+   * Card widths are tied to BOTH the viewport width and height, so two boards, the hand and
+   * the controls fit on one screen in portrait without scrolling, and nothing ever needs
+   * horizontal scrolling. The lower bound keeps cards readable on very short screens
+   * (landscape phones), where the page scrolls vertically instead.
+   */
+  --card-human: max(2.35rem, min(12.6vw, 5.9vh, 4.9rem));
+  --card-cpu: max(1.95rem, min(9.6vw, 4.3vh, 3.9rem));
+  --card-fl: max(2rem, min(10vw, 5vh, 4rem));
+}
+@supports (height: 1dvh) {
+  :root {
+    --card-human: max(2.35rem, min(12.6vw, 5.9dvh, 4.9rem));
+    --card-cpu: max(1.95rem, min(9.6vw, 4.3dvh, 3.9rem));
+    --card-fl: max(2rem, min(10vw, 5dvh, 4rem));
+  }
+}
+
+html,
+body {
+  background-color: var(--felt);
+  color: #f5f5f4;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+}
+
+/* ---- Table layout ------------------------------------------------------ */
+/* Portrait (phones, upright tablets): opponent on top, your hand, your board. */
+.ofc-table {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.25rem;
+  width: 100%;
+  max-width: 48rem;
+}
+.ofc-header { width: 100%; max-width: 48rem; }
+.ofc-center-inner { width: 100%; }
+.ofc-tracker-dock { display: none; }
+
+/*
+ * Landscape (laptops, desktops, tablets on their side): there is width to spare but little
+ * height, so the two boards sit side by side with the hand underneath, and the cards are
+ * sized from the height that is left.
+ */
+@media (min-aspect-ratio: 5/4) {
+  :root {
+    --card-human: max(2.35rem, min(8.2vw, calc((100vh - 21.5rem) / 5.6), 4.9rem));
+    --card-cpu: var(--card-human);
+    --card-fl: max(2rem, min(5vw, calc((100vh - 21.5rem) / 7), 4rem));
+  }
+  @supports (height: 1dvh) {
+    :root {
+      --card-human: max(2.35rem, min(8.2vw, calc((100dvh - 21.5rem) / 5.6), 4.9rem));
+      --card-fl: max(2rem, min(5vw, calc((100dvh - 21.5rem) / 7), 4rem));
+    }
+  }
+  .ofc-table {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "cpu you" "center center";
+    align-content: center;
+    column-gap: clamp(0.75rem, 2vw, 2rem);
+    row-gap: 0.75rem;
+    max-width: 76rem;
+  }
+  .ofc-header { max-width: 76rem; }
+  .ofc-area-cpu { grid-area: cpu; align-self: end; }
+  .ofc-area-you { grid-area: you; align-self: end; }
+  .ofc-area-center { grid-area: center; position: relative; }
+  .ofc-center-inner { max-width: 40rem; margin-inline: auto; }
+}
+/* Room for an always-visible card tracker beside the hand. */
+@media (min-aspect-ratio: 5/4) and (min-width: 80rem) {
+  .ofc-tracker-dock {
+    display: block;
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16.5rem;
+  }
+}
+
+/* ---- Cards ------------------------------------------------------------- */
+.cards-human { --card-w: var(--card-human); }
+.cards-cpu { --card-w: var(--card-cpu); }
+.cards-fl { --card-w: var(--card-fl); }
+.cards-mini { --card-w: calc(var(--card-human) * 0.62); }
+.cards-deck { --card-w: calc(var(--card-human) * 0.5); }
+/* Boards inside the replay dialog: sized to fit two boards in a modal. */
+.cards-replay { --card-w: clamp(1.9rem, min(9vw, 4.4vh), 3.2rem); }
+
+.ofc-card,
+.ofc-slot {
+  width: var(--card-w, var(--card-human));
+  aspect-ratio: 5 / 7;
+  font-size: calc(var(--card-w, var(--card-human)) * 0.3);
+  border-radius: calc(var(--card-w, var(--card-human)) * 0.11);
+  flex: none;
+}
+.ofc-card {
+  /* Flights and drags animate transform; let the compositor own it. */
+  will-change: transform;
+  backface-visibility: hidden;
+}
+.ofc-card-back {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--back-a, #7f1d1d),
+    var(--back-a, #7f1d1d) 4px,
+    var(--back-b, #991b1b) 4px,
+    var(--back-b, #991b1b) 8px
+  );
+  box-shadow: inset 0 0 0 2px rgba(212, 175, 55, 0.45);
+}
+/* Card back colours (set once on the table; every card back inherits them). */
+.ofc-back-red { --back-a: #7f1d1d; --back-b: #991b1b; }
+.ofc-back-blue { --back-a: #1e3a8a; --back-b: #1d4ed8; }
+.ofc-back-green { --back-a: #14532d; --back-b: #15803d; }
+.ofc-draggable {
+  touch-action: none; /* the card, not the page, follows the finger */
+  cursor: grab;
+}
+.ofc-draggable[data-dragging='true'] {
+  cursor: grabbing;
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.55);
+}
+
+/* A drop zone under a dragged card. */
+[data-drop][data-drag-over='true'] {
+  background-color: rgba(212, 175, 55, 0.14);
+  box-shadow: inset 0 0 0 2px rgba(212, 175, 55, 0.7);
+}
+
+/* ---- Small animations -------------------------------------------------- */
+@keyframes ofc-pop {
+  from { opacity: 0; transform: scale(0.9) translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ofc-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ofc-stamp {
+  0% { opacity: 0; transform: rotate(-12deg) scale(2.2); }
+  60% { opacity: 1; transform: rotate(-12deg) scale(0.94); }
+  100% { opacity: 1; transform: rotate(-12deg) scale(1); }
+}
+@keyframes ofc-pulse-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(244, 63, 94, 0); }
+}
+.ofc-pop { animation: ofc-pop 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.ofc-fade { animation: ofc-fade 0.35s ease-out both; }
+.ofc-stamp { animation: ofc-stamp 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+.ofc-pulse { animation: ofc-pulse-ring 1.4s ease-in-out infinite; }
+
+/* The tutorial's floating note: placed away from what it points at. */
+.ofc-coach {
+  position: fixed;
+  z-index: 50;
+  left: 50%;
+  translate: -50% 0;
+  width: min(94vw, 24rem);
+}
+.ofc-coach[data-place='top'] { top: 3.4rem; }
+.ofc-coach[data-place='bottom'] { bottom: 0.75rem; }
+@media (min-aspect-ratio: 5/4) {
+  /* Side-by-side boards: sit over the opponent's board (left) or your own (right). */
+  .ofc-coach[data-place='top'] { left: 27%; top: 4rem; }
+  .ofc-coach[data-place='bottom'] { left: 73%; top: 4rem; bottom: auto; }
+}
+
+/* The tutorial's highlight on the part of the table it is talking about. */
+@keyframes ofc-coach-ring {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.9), 0 0 0 6px rgba(212, 175, 55, 0.25); }
+  50% { box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.9), 0 0 0 12px rgba(212, 175, 55, 0); }
+}
+.ofc-coach-target {
+  border-radius: 1.25rem;
+  animation: ofc-coach-ring 1.6s ease-in-out infinite;
+}
+
+/* Keyboard hints only make sense with a real keyboard and mouse. */
+.ofc-kbd-hint { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .ofc-kbd-hint { display: block; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ofc-pop, .ofc-fade, .ofc-stamp, .ofc-pulse { animation: none; }
+  .ofc-coach-target { animation: none; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.9); }
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
