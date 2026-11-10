@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+html,
+body {
+  background-color: #061c12;
+  color: #f5f5f4;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  overflow-x: hidden;
+}
+
+/* Card and slot sizes are defined once so they always line up, and shrink on phones. */
+.ofc-card,
+.ofc-slot {
+  width: clamp(2.7rem, 12vw, 5rem);
+  aspect-ratio: 5 / 7;
+  font-size: clamp(0.8rem, 3.4vw, 1.25rem);
+}
+.ofc-card-sm {
+  width: clamp(2.3rem, 9.5vw, 4rem);
+  aspect-ratio: 5 / 7;
+  font-size: clamp(0.7rem, 2.8vw, 1rem);
+}
+
+@keyframes ofc-pop {
+  from { opacity: 0; transform: scale(0.92) translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ofc-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.ofc-pop { animation: ofc-pop 0.28s ease-out both; }
+.ofc-fade { animation: ofc-fade 0.4s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ofc-pop, .ofc-fade { animation: none; }
+  * { transition-duration: 0.01ms !important; }
+}
