@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { GameConfig } from '../engine';
-import { usePrefs, type MotionLevel } from '../ui/prefs';
+import { DEFAULT_PREFS, usePrefs, type CardBack, type MotionLevel } from '../ui/prefs';
 import Modal from './Modal';
 import SettingsPanel from './SettingsPanel';
 import Toggle from './Toggle';
@@ -11,8 +11,16 @@ interface SettingsModalProps {
   locked: boolean;
   onConfig: (patch: Partial<GameConfig>) => void;
   onNewSession: () => void;
+  /** Erase everything: bankroll, stats, history, achievements and preferences. */
+  onResetAll: () => void;
   onClose: () => void;
 }
+
+const BACKS: readonly { value: CardBack; label: string; swatch: string }[] = [
+  { value: 'red', label: 'Red', swatch: 'bg-red-800' },
+  { value: 'blue', label: 'Blue', swatch: 'bg-blue-800' },
+  { value: 'green', label: 'Green', swatch: 'bg-green-800' },
+];
 
 const MOTION: readonly { value: MotionLevel; label: string }[] = [
   { value: 'full', label: 'Normal' },
@@ -27,8 +35,9 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
   </section>
 );
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ config, locked, onConfig, onNewSession, onClose }) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({ config, locked, onConfig, onNewSession, onResetAll, onClose }) => {
   const { prefs, update, setHelper } = usePrefs();
+  const [confirmReset, setConfirmReset] = useState(false);
   return (
     <Modal title="Settings" onClose={onClose}>
       <Section title="Game">
@@ -73,13 +82,32 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ config, locked, onConfig,
         </div>
       </Section>
 
-      <Section title="Cards">
+      <Section title="Deck style">
         <Toggle
           label="Four-colour deck"
           description="Clubs green and diamonds blue: easier to tell suits apart"
           checked={prefs.fourColorDeck}
           onChange={(fourColorDeck) => update({ fourColorDeck })}
         />
+        <div className="flex items-center justify-between gap-4 py-1.5">
+          <span className="text-sm font-bold text-stone-100">Card backs</span>
+          <div className="flex gap-1.5" role="radiogroup" aria-label="Card back colour">
+            {BACKS.map((b) => (
+              <button
+                key={b.value}
+                type="button"
+                role="radio"
+                aria-checked={prefs.cardBack === b.value}
+                aria-label={b.label}
+                title={b.label}
+                onClick={() => update({ cardBack: b.value })}
+                className={`h-8 w-8 rounded-lg border-2 transition ${b.swatch} ${
+                  prefs.cardBack === b.value ? 'border-[#d4af37] ring-2 ring-[#d4af37]/40' : 'border-white/15'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
       </Section>
 
       <Section title="Helpers">
@@ -91,17 +119,42 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ config, locked, onConfig,
         <Toggle label="CPU move reasons" description="A short explanation of some CPU moves" checked={prefs.cpuHints} onChange={(cpuHints) => update({ cpuHints })} />
       </Section>
 
-      <Section title="Session">
-        <button
-          type="button"
-          onClick={() => {
-            onNewSession();
-            onClose();
-          }}
-          className="rounded-full border border-rose-400/40 px-4 py-1.5 text-xs font-black uppercase tracking-wider text-rose-300 transition hover:bg-rose-500/15"
-        >
-          New session (reset bankroll)
-        </button>
+      <Section title="Your data">
+        <p className="mb-2 text-xs text-stone-400">
+          Your bankroll, settings, stats, history and any hand in progress are saved on this
+          device only.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              onNewSession();
+              onClose();
+            }}
+            className="rounded-full border border-white/15 px-4 py-1.5 text-xs font-black uppercase tracking-wider text-stone-200 transition hover:border-[#d4af37]/50"
+          >
+            New session (reset bankroll)
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!confirmReset) {
+                setConfirmReset(true);
+                return;
+              }
+              onResetAll();
+              update(DEFAULT_PREFS);
+              onClose();
+            }}
+            className={`rounded-full border px-4 py-1.5 text-xs font-black uppercase tracking-wider transition ${
+              confirmReset
+                ? 'border-rose-400 bg-rose-600 text-white'
+                : 'border-rose-400/40 text-rose-300 hover:bg-rose-500/15'
+            }`}
+          >
+            {confirmReset ? 'Tap again to erase everything' : 'Erase all data'}
+          </button>
+        </div>
       </Section>
     </Modal>
   );

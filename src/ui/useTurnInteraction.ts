@@ -146,9 +146,13 @@ export const useTurnInteraction = (game: GameState, api: GameApi): TurnInteracti
   );
 
   const undoLast = useCallback((): void => {
-    const last = order.current.ids[order.current.ids.length - 1];
+    // After a refresh the staging order is gone; fall back to the engine's own record.
+    const last =
+      order.current.ids[order.current.ids.length - 1] ??
+      turn?.placed[turn.placed.length - 1]?.cardId ??
+      turn?.discarded[turn.discarded.length - 1];
     if (last) undo(last);
-  }, [undo]);
+  }, [undo, turn]);
 
   const select = useCallback(
     (cardId: string) => setSelectedRaw((cur) => (cur === cardId ? null : cardId)),

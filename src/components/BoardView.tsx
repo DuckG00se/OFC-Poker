@@ -15,7 +15,7 @@ const outsText = (outs: readonly RowOuts[]): string =>
 export interface BoardViewProps {
   board: Board;
   /** Card size: the player's board is larger than the opponent's. */
-  size: 'human' | 'cpu';
+  size: 'human' | 'cpu' | 'replay';
   /** Empty slots accept taps, and rows accept drops. */
   interactive?: boolean;
   /** Emphasise empty slots (a card is selected or being dragged). */
@@ -59,7 +59,7 @@ const BoardView: React.FC<BoardViewProps> = ({
 }) => (
   <div
     className={`relative flex flex-col rounded-2xl border p-1 transition-colors duration-500 sm:rounded-3xl sm:p-2 ${
-      size === 'human' ? 'cards-human gap-0.5' : 'cards-cpu gap-0'
+      size === 'human' ? 'cards-human gap-0.5' : size === 'cpu' ? 'cards-cpu gap-0' : 'cards-replay gap-0'
     } ${fouled ? 'border-rose-500/60 bg-rose-950/30' : 'border-white/5 bg-black/30'}`}
   >
     {fouled && (

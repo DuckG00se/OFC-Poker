@@ -1,5 +1,5 @@
 import React from 'react';
-import { Coins, Crown, Layers, Settings, Volume2, VolumeX } from 'lucide-react';
+import { Coins, Crown, Layers, Menu, Volume2, VolumeX } from 'lucide-react';
 
 interface HeaderProps {
   bankroll: number;
@@ -10,7 +10,7 @@ interface HeaderProps {
   showTracker: boolean;
   onToggleSound: () => void;
   onOpenTracker: () => void;
-  onOpenSettings: () => void;
+  onOpenMenu: () => void;
 }
 
 const IconButton: React.FC<{
@@ -40,7 +40,7 @@ const Header: React.FC<HeaderProps> = ({
   showTracker,
   onToggleSound,
   onOpenTracker,
-  onOpenSettings,
+  onOpenMenu,
 }) => (
   <header className="ofc-header z-20 flex items-center justify-between gap-2 px-2 pt-2 sm:px-4">
     <div className="flex min-w-0 items-center gap-1.5">
@@ -77,8 +77,8 @@ const Header: React.FC<HeaderProps> = ({
       <IconButton label={soundOn ? 'Mute sound' : 'Turn sound on'} pressed={!soundOn} onClick={onToggleSound}>
         {soundOn ? <Volume2 size={16} aria-hidden="true" /> : <VolumeX size={16} aria-hidden="true" />}
       </IconButton>
-      <IconButton label="Settings" onClick={onOpenSettings}>
-        <Settings size={16} aria-hidden="true" />
+      <IconButton label="Menu" onClick={onOpenMenu}>
+        <Menu size={16} aria-hidden="true" />
       </IconButton>
     </div>
   </header>

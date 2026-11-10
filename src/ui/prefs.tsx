@@ -14,6 +14,7 @@ export interface Helpers {
 }
 
 export type MotionLevel = 'full' | 'fast' | 'off';
+export type CardBack = 'red' | 'blue' | 'green';
 
 /** Player preferences: presentation only, never rules. */
 export interface Prefs {
@@ -21,19 +22,25 @@ export interface Prefs {
   haptics: boolean;
   /** Colour-blind friendly deck: clubs green, diamonds blue. */
   fourColorDeck: boolean;
+  /** Colour of the card backs. */
+  cardBack: CardBack;
   motion: MotionLevel;
   /** Show the CPU's short explanation of some of its moves. */
   cpuHints: boolean;
   helpers: Helpers;
+  /** The guided first hand has been completed or skipped. */
+  tutorialSeen: boolean;
 }
 
 export const DEFAULT_PREFS: Prefs = {
   sound: true,
   haptics: true,
   fourColorDeck: false,
+  cardBack: 'red',
   motion: 'full',
   cpuHints: true,
   helpers: { handNames: true, foulWarning: true, outs: true, royalties: true, tracker: true },
+  tutorialSeen: false,
 };
 
 interface PrefsApi {

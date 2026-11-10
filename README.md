@@ -2,7 +2,7 @@
 
 Single-player **Open Face Chinese Poker** against a CPU opponent. React 18 + TypeScript + Vite + Tailwind CSS v4, deployed to Cloudflare with `wrangler`.
 
-> Work in progress: Phases 1 (rules engine), 2 (Monte Carlo CPU) and 3 (game feel) are complete. See [Roadmap](#roadmap).
+> Work in progress: Phases 1 (rules engine), 2 (Monte Carlo CPU), 3 (game feel) and 4 (progression) are complete. See [Roadmap](#roadmap).
 
 ## Run, test, deploy
 
@@ -29,7 +29,7 @@ src/
     session    bankroll, dealer button, Fantasyland carry-over
   ai/          CPU opponent: heuristic, Monte Carlo search, Fantasyland solver, personas.
                Runs in a Web Worker; sees only what a player may see.
-  state/       React glue: app reducer + the hook that owns the CPU's timers
+  state/       App reducer, lifetime stats, achievements, save/load, and the hook that owns the CPU's timers
   ui/          Presentation infrastructure: card flights, pointer drag, keyboard,
                sound, score reveal, preferences, foul-risk helper
   components/  Rendering only; they dispatch actions
@@ -76,6 +76,17 @@ Cards you place stay movable until you press **Confirm**: tap one to take it bac
 ### Layout
 
 No horizontal scrolling at any size. In portrait the opponent is on top and your board at the bottom; in landscape the boards sit side by side with your hand underneath. Card size follows both the width and the height of the screen, so the whole table fits on one screen from about 390×800 upward. Smaller or very short screens (for example 375×667, or a phone held sideways) scroll vertically.
+
+## Progress, saving and installing
+
+* **Autosave** (localStorage, this device only): bankroll, settings, preferences, lifetime stats, achievements, the last 50 hands, and the hand in progress, which resumes after a refresh. A hand is saved as its seed plus its action log and rebuilt by replaying it through the engine; the engine ignores illegal actions, and saved data is validated field by field, so a damaged or hand-edited save loses data at worst and cannot crash the game. If the CPU was mid-turn, it simply decides that turn again. Settings has "Erase all data".
+* **Stats:** hands played, win / foul / Fantasyland rates, biggest win, royalties earned, net points, scoops, best no-foul streak.
+* **Hand history and replay:** open any of the last 50 hands from Menu, History and step through it turn by turn (scrubber, play/pause, arrow keys). It shows everything, including a Fantasyland board that was hidden at the time.
+* **Rules and royalties** reference (Menu): the royalty tables are read from the engine, so they cannot drift from what the game pays.
+* **Guided first hand:** an optional walkthrough on your first deal (and from the menu any time). It never blocks play: steps that teach an action wait for you to do it.
+* **Achievements:** 18, from "first scoop" and "first Fantasyland" to a 10-hand no-foul streak, shown as a toast when unlocked.
+* **Settings:** variant, CPU level, stake, Fantasyland mode, deck style (four-colour, card-back colour), animation speed, sound, vibration, every helper.
+* **Installable PWA that works offline:** a service worker generated at build time precaches the exact files of that build (including the CPU's worker), serves pages network-first so online players get updates, and falls back to the cache offline. Use the browser's install button or Menu, Install app (Chromium); on iOS use Share, Add to Home Screen.
 
 ## Rules
 
@@ -173,5 +184,5 @@ PARAMS_A='{"sims":60}' npx vite-node scripts/bench-ai.ts medium easy 20 10   # o
 1. ✅ **Foundation and correctness:** pure engine, real OFC rules, Pineapple, Fantasyland, tests, clean tooling.
 2. ✅ **Monte Carlo CPU:** three levels, Web Worker, names and personalities, optional move explanations.
 3. ✅ **Game feel:** card flights and flips, row-by-row score reveal, tap / drag / keyboard input with undo, live helpers, synthesised sound, responsive layouts, accessibility.
-4. Settings, saved games and stats, hand replay, tutorial, achievements, PWA.
+4. ✅ **Progression:** settings, autosave with resume, lifetime stats, hand history and replay, tutorial, achievements, offline PWA.
 5. Lighthouse pass, deployment polish, screenshots.

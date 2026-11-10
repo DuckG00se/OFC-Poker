@@ -98,6 +98,8 @@ body {
 .cards-fl { --card-w: var(--card-fl); }
 .cards-mini { --card-w: calc(var(--card-human) * 0.62); }
 .cards-deck { --card-w: calc(var(--card-human) * 0.5); }
+/* Boards inside the replay dialog: sized to fit two boards in a modal. */
+.cards-replay { --card-w: clamp(1.9rem, min(9vw, 4.4vh), 3.2rem); }
 
 .ofc-card,
 .ofc-slot {
@@ -113,10 +115,19 @@ body {
   backface-visibility: hidden;
 }
 .ofc-card-back {
-  background:
-    repeating-linear-gradient(45deg, #7f1d1d, #7f1d1d 4px, #991b1b 4px, #991b1b 8px);
+  background: repeating-linear-gradient(
+    45deg,
+    var(--back-a, #7f1d1d),
+    var(--back-a, #7f1d1d) 4px,
+    var(--back-b, #991b1b) 4px,
+    var(--back-b, #991b1b) 8px
+  );
   box-shadow: inset 0 0 0 2px rgba(212, 175, 55, 0.45);
 }
+/* Card back colours (set once on the table; every card back inherits them). */
+.ofc-back-red { --back-a: #7f1d1d; --back-b: #991b1b; }
+.ofc-back-blue { --back-a: #1e3a8a; --back-b: #1d4ed8; }
+.ofc-back-green { --back-a: #14532d; --back-b: #15803d; }
 .ofc-draggable {
   touch-action: none; /* the card, not the page, follows the finger */
   cursor: grab;
@@ -155,6 +166,32 @@ body {
 .ofc-stamp { animation: ofc-stamp 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
 .ofc-pulse { animation: ofc-pulse-ring 1.4s ease-in-out infinite; }
 
+/* The tutorial's floating note: placed away from what it points at. */
+.ofc-coach {
+  position: fixed;
+  z-index: 50;
+  left: 50%;
+  translate: -50% 0;
+  width: min(94vw, 24rem);
+}
+.ofc-coach[data-place='top'] { top: 3.4rem; }
+.ofc-coach[data-place='bottom'] { bottom: 0.75rem; }
+@media (min-aspect-ratio: 5/4) {
+  /* Side-by-side boards: sit over the opponent's board (left) or your own (right). */
+  .ofc-coach[data-place='top'] { left: 27%; top: 4rem; }
+  .ofc-coach[data-place='bottom'] { left: 73%; top: 4rem; bottom: auto; }
+}
+
+/* The tutorial's highlight on the part of the table it is talking about. */
+@keyframes ofc-coach-ring {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.9), 0 0 0 6px rgba(212, 175, 55, 0.25); }
+  50% { box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.9), 0 0 0 12px rgba(212, 175, 55, 0); }
+}
+.ofc-coach-target {
+  border-radius: 1.25rem;
+  animation: ofc-coach-ring 1.6s ease-in-out infinite;
+}
+
 /* Keyboard hints only make sense with a real keyboard and mouse. */
 .ofc-kbd-hint { display: none; }
 @media (hover: hover) and (pointer: fine) {
@@ -163,6 +200,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .ofc-pop, .ofc-fade, .ofc-stamp, .ofc-pulse { animation: none; }
+  .ofc-coach-target { animation: none; box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.9); }
   *, *::before, *::after {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;

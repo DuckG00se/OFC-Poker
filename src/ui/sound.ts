@@ -16,7 +16,8 @@ export type SoundName =
   | 'lose'
   | 'push'
   | 'foul'
-  | 'fantasyland';
+  | 'fantasyland'
+  | 'achievement';
 
 type AudioCtor = typeof AudioContext;
 
@@ -51,6 +52,11 @@ const RECIPES: Readonly<Record<Exclude<SoundName, 'deal' | 'place' | 'discard' |
   foul: [
     { freq: 150, at: 0, dur: 0.34, type: 'sawtooth', gain: 0.5, to: 90 },
     { freq: 157, at: 0, dur: 0.34, type: 'sawtooth', gain: 0.4, to: 95 },
+  ],
+  achievement: [
+    { freq: 659.25, at: 0, dur: 0.1, type: 'triangle' },
+    { freq: 880, at: 0.09, dur: 0.1, type: 'triangle' },
+    { freq: 1318.5, at: 0.18, dur: 0.34, type: 'triangle', gain: 0.7 },
   ],
   fantasyland: [
     { freq: 783.99, at: 0, dur: 0.12, type: 'sine' },

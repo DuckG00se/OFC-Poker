@@ -13,3 +13,12 @@ ReactDOM.createRoot(rootElement).render(
     <App />
   </React.StrictMode>,
 );
+
+// Offline support and installability (production builds only; see vite.config.ts).
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      // No service worker (e.g. an insecure origin): the game still works online.
+    });
+  });
+}

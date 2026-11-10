@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play } from 'lucide-react';
+import { BookOpen, Play } from 'lucide-react';
 import { personaFor } from '../ai';
 import type { GameConfig } from '../engine';
 import SettingsPanel from './SettingsPanel';
@@ -8,9 +8,15 @@ interface StartScreenProps {
   config: GameConfig;
   onConfig: (patch: Partial<GameConfig>) => void;
   onDeal: () => void;
+  /** Whether the guided hand will run on this deal, and the switch for it. */
+  guided: boolean;
+  onGuided: (on: boolean) => void;
+  onRules: () => void;
+  /** A line about the player's record so far, if they have one. */
+  summary: string | null;
 }
 
-const StartScreen: React.FC<StartScreenProps> = ({ config, onConfig, onDeal }) => {
+const StartScreen: React.FC<StartScreenProps> = ({ config, onConfig, onDeal, guided, onGuided, onRules, summary }) => {
   const persona = personaFor(config.difficulty);
   return (
     <main className="relative z-10 flex w-full max-w-md flex-1 flex-col items-center justify-center px-3 py-6">
@@ -27,6 +33,18 @@ const StartScreen: React.FC<StartScreenProps> = ({ config, onConfig, onDeal }) =
           <span className="font-black text-white">{persona.name}</span>, {persona.title.toLowerCase()}.{' '}
           {persona.blurb}
         </p>
+        <label className="flex w-full cursor-pointer items-center gap-2.5 text-sm text-stone-200">
+          <input
+            type="checkbox"
+            checked={guided}
+            onChange={(e) => onGuided(e.target.checked)}
+            className="h-4 w-4 accent-[#d4af37]"
+          />
+          <span>
+            <span className="font-bold">Guide me through this hand</span>
+            <span className="block text-xs text-stone-400">A short walkthrough while you play. Skip it any time.</span>
+          </span>
+        </label>
         <button
           type="button"
           onClick={onDeal}
@@ -35,6 +53,16 @@ const StartScreen: React.FC<StartScreenProps> = ({ config, onConfig, onDeal }) =
         >
           <Play size={18} fill="currentColor" aria-hidden="true" /> DEAL
         </button>
+        <div className="flex w-full flex-wrap items-center justify-between gap-2 text-xs text-stone-400">
+          <span>{summary ?? 'Your progress is saved on this device.'}</span>
+          <button
+            type="button"
+            onClick={onRules}
+            className="flex items-center gap-1.5 font-black uppercase tracking-wider text-[#e7c25d] hover:underline"
+          >
+            <BookOpen size={13} aria-hidden="true" /> Rules
+          </button>
+        </div>
       </div>
     </main>
   );

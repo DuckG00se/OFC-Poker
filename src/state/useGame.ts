@@ -10,6 +10,7 @@ import {
   type Session,
 } from '../engine';
 import { appReducer, initialAppState, type AppState } from './appReducer';
+import type { HandRecord, LifetimeStats } from './stats';
 
 /** Minimum "thinking" time before the CPU moves, so pacing feels natural at every level. */
 const THINK_BASE_MS: Readonly<Record<Difficulty, number>> = { easy: 500, medium: 800, hard: 1100 };
@@ -29,8 +30,15 @@ export interface AiNote {
 }
 
 export interface GameApi {
+  /** The whole persistent state (for saving). */
+  app: AppState;
   game: GameState;
   session: Session;
+  stats: LifetimeStats;
+  history: readonly HandRecord[];
+  achievements: Readonly<Record<string, number>>;
+  /** Achievements unlocked by the hand that was just scored. */
+  unlocked: readonly string[];
   /** True while the CPU is choosing or making its move. */
   aiThinking: boolean;
   /** The CPU's explanation of its latest notable move, if it gave one. */
@@ -43,6 +51,8 @@ export interface GameApi {
   deal: () => void;
   setConfig: (patch: Partial<GameConfig>) => void;
   newSession: () => void;
+  /** Wipe everything: bankroll, stats, history and achievements. */
+  resetAll: () => void;
 }
 
 /**
@@ -99,7 +109,7 @@ export const useGame = (initial?: AppState): GameApi => {
         planToActions('ai', plan).forEach((action, i) => {
           timers.push(
             window.setTimeout(() => {
-              if (!cancelled) dispatch({ type: 'GAME', action });
+              if (!cancelled) dispatch({ type: 'GAME', action, at: Date.now() });
             }, i * AI_STEP_MS),
           );
         });
@@ -117,25 +127,25 @@ export const useGame = (initial?: AppState): GameApi => {
 
   const place = useCallback(
     (cardId: string, row: RowName) =>
-      dispatch({ type: 'GAME', action: { type: 'PLACE', seat: 'human', cardId, row } }),
+      dispatch({ type: 'GAME', action: { type: 'PLACE', seat: 'human', cardId, row }, at: Date.now() }),
     [],
   );
   const move = useCallback(
     (cardId: string, row: RowName) =>
-      dispatch({ type: 'GAME', action: { type: 'MOVE', seat: 'human', cardId, row } }),
+      dispatch({ type: 'GAME', action: { type: 'MOVE', seat: 'human', cardId, row }, at: Date.now() }),
     [],
   );
   const discard = useCallback(
     (cardId: string) =>
-      dispatch({ type: 'GAME', action: { type: 'DISCARD', seat: 'human', cardId } }),
+      dispatch({ type: 'GAME', action: { type: 'DISCARD', seat: 'human', cardId }, at: Date.now() }),
     [],
   );
   const undo = useCallback(
-    (cardId: string) => dispatch({ type: 'GAME', action: { type: 'UNDO', seat: 'human', cardId } }),
+    (cardId: string) => dispatch({ type: 'GAME', action: { type: 'UNDO', seat: 'human', cardId }, at: Date.now() }),
     [],
   );
   const confirm = useCallback(
-    () => dispatch({ type: 'GAME', action: { type: 'CONFIRM', seat: 'human' } }),
+    () => dispatch({ type: 'GAME', action: { type: 'CONFIRM', seat: 'human' }, at: Date.now() }),
     [],
   );
   const deal = useCallback(() => {
@@ -151,12 +161,22 @@ export const useGame = (initial?: AppState): GameApi => {
     dispatch({ type: 'NEW_SESSION', seed: randomSeed() });
   }, []);
 
+  const resetAll = useCallback(() => {
+    setAiNote(null);
+    dispatch({ type: 'RESET_ALL', seed: randomSeed() });
+  }, []);
+
   const aiThinking = aiTurnKey !== null;
 
   return useMemo(
     () => ({
+      app,
       game,
       session,
+      stats: app.stats,
+      history: app.history,
+      achievements: app.achievements,
+      unlocked: app.unlocked,
       aiThinking,
       aiNote,
       place,
@@ -167,7 +187,8 @@ export const useGame = (initial?: AppState): GameApi => {
       deal,
       setConfig,
       newSession,
+      resetAll,
     }),
-    [game, session, aiThinking, aiNote, place, move, discard, undo, confirm, deal, setConfig, newSession],
+    [app, game, session, aiThinking, aiNote, place, move, discard, undo, confirm, deal, setConfig, newSession, resetAll],
   );
 };

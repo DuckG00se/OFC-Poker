@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Check, Sparkles, Undo2 } from 'lucide-react';
 import { personaFor, quipForResult, quipForStart } from '../ai';
 import {
@@ -11,29 +11,32 @@ import {
   type RowName,
   type RowOuts,
 } from '../engine';
+import { rate } from '../state/stats';
 import type { GameApi } from '../state/useGame';
 import { useMotionScale, usePrefs } from '../ui/prefs';
 import { useFoulRisk } from '../ui/useFoulRisk';
+import { useInstallPrompt } from '../ui/useInstallPrompt';
 import { revealPlan, useGameFeedback } from '../ui/useGameFeedback';
 import { useKeyboard } from '../ui/useKeyboard';
 import { usePointerDrag } from '../ui/usePointerDrag';
 import { useCountUp, useScoreReveal } from '../ui/useScoreReveal';
 import { useTurnInteraction } from '../ui/useTurnInteraction';
+import { useTutorial } from '../ui/useTutorial';
+import AchievementToasts from './AchievementToasts';
 import BoardView from './BoardView';
 import CardTracker from './CardTracker';
+import CoachPanel from './CoachPanel';
 import CpuBadge from './CpuBadge';
 import DeckPile from './DeckPile';
+import Dialogs, { type Dialog } from './Dialogs';
 import FoulChip from './FoulChip';
 import HandTray from './HandTray';
 import Header from './Header';
-import Modal from './Modal';
-import ResultDetails from './ResultDetails';
 import ScoreStrip from './ScoreStrip';
-import SettingsModal from './SettingsModal';
 import StartScreen from './StartScreen';
 
 const REVEAL_STEP_MS = 650;
-type Dialog = 'settings' | 'tracker' | 'details' | null;
+const FLASH_MS = 3200;
 
 const pickRows = <T,>(fn: (row: RowName) => T): Record<RowName, T> => ({
   front: fn('front'),
@@ -47,6 +50,16 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
   const { prefs, update } = usePrefs();
   const motion = useMotionScale();
   const [dialog, setDialog] = useState<Dialog>(null);
+  const install = useInstallPrompt();
+  // A passing message in the status line (e.g. "your game was restored").
+  const [flash, setFlash] = useState<string | null>(() =>
+    game.phase === 'placing' && game.log.length > 1 ? 'Welcome back: your hand was saved' : null,
+  );
+  useEffect(() => {
+    if (flash === null) return;
+    const id = window.setTimeout(() => setFlash(null), FLASH_MS);
+    return () => window.clearTimeout(id);
+  }, [flash]);
 
   const ix = useTurnInteraction(game, api);
   const drag = usePointerDrag(ix.drop);
@@ -59,6 +72,28 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
   const plan = useMemo(() => revealPlan(result), [result]);
   const reveal = useScoreReveal(scored ? seed : null, plan.total, REVEAL_STEP_MS * motion);
   useGameFeedback(game, { sound: prefs.sound, haptics: prefs.haptics, stage: reveal.stage, plan });
+
+  const tutorial = useTutorial({
+    game,
+    cpuName: persona.name,
+    stagedCount: ix.stagedIds.size + ix.stagedDiscards.length,
+    turnComplete: ix.complete,
+    scoreShown: reveal.done,
+    onDone: () => update({ tutorialSeen: true }),
+  });
+  // On the start screen: offer the guided hand until it has been seen once.
+  const [guidedChoice, setGuided] = useState<boolean | null>(null);
+  const guided = guidedChoice ?? !prefs.tutorialSeen;
+  const startTutorial = (): void => {
+    tutorial.request();
+    if (game.phase === 'placing') setFlash('The guided hand starts with your next deal');
+  };
+  const deal = (): void => {
+    if (game.phase === 'idle' && guided) tutorial.request();
+    api.deal();
+  };
+  const coach = tutorial.step?.target ?? null;
+  const glow = (target: typeof coach): string => (coach !== null && coach === target ? 'ofc-coach-target' : '');
 
   const view = useMemo(() => viewFor(game, 'human'), [game]);
   const foulRisk = useFoulRisk(game, prefs.helpers.foulWarning);
@@ -122,6 +157,7 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
 
   const status = ((): string => {
     if (ix.notice) return ix.notice;
+    if (flash) return flash;
     if (scored) return reveal.done ? 'Hand complete' : 'Scoring…';
     const turn = game.turn;
     if (!turn) return '';
@@ -146,9 +182,9 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
       ix.placeOn(row, ix.selectedId ?? ix.held[0]?.id);
     },
     onEnter: () => {
-      if (game.phase === 'idle') api.deal();
+      if (game.phase === 'idle') deal();
       else if (scored) {
-        if (reveal.done) api.deal();
+        if (reveal.done) deal();
         else reveal.skip();
       } else if (ix.turn) ix.confirm();
     },
@@ -164,7 +200,7 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
   const highlightSlots = ix.turn !== null && ix.placesLeft > 0 && (ix.selectedId !== null || drag.dragId !== null);
 
   return (
-    <div className="relative flex min-h-dvh flex-col items-center overflow-x-hidden bg-[#061c12] font-sans selection:bg-yellow-500/30">
+    <div className={`ofc-back-${prefs.cardBack} relative flex min-h-dvh flex-col items-center overflow-x-hidden bg-[#061c12] font-sans selection:bg-yellow-500/30`}>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#14553a_0%,_#0a2c1e_45%,_#061c12_80%)]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-b from-[#4a2014] to-[#26100a]" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1.5 bg-gradient-to-t from-[#4a2014] to-[#26100a]" />
@@ -177,16 +213,28 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
         soundOn={prefs.sound}
         showTracker={prefs.helpers.tracker && game.phase !== 'idle'}
         onToggleSound={() => update({ sound: !prefs.sound })}
-        onOpenTracker={() => setDialog('tracker')}
-        onOpenSettings={() => setDialog('settings')}
+        onOpenTracker={() => setDialog({ kind: 'tracker' })}
+        onOpenMenu={() => setDialog({ kind: 'menu' })}
       />
 
       {game.phase === 'idle' ? (
-        <StartScreen config={session.config} onConfig={api.setConfig} onDeal={api.deal} />
+        <StartScreen
+          config={session.config}
+          onConfig={api.setConfig}
+          onDeal={deal}
+          guided={guided}
+          onGuided={setGuided}
+          onRules={() => setDialog({ kind: 'rules' })}
+          summary={
+            api.stats.handsPlayed > 0
+              ? `${api.stats.handsPlayed} hands played · ${rate(api.stats.handsWon, api.stats.handsPlayed)}% won`
+              : null
+          }
+        />
       ) : (
         <main className="ofc-table relative z-10 flex-1 px-1.5 pb-2.5 pt-1.5 sm:px-4">
           <h1 className="sr-only">Open Face Chinese Poker: hand {Math.max(1, handNo)}</h1>
-          <section aria-label={`${persona.name}'s board`} className="ofc-area-cpu flex flex-col gap-1">
+          <section aria-label={`${persona.name}'s board`} className={`ofc-area-cpu flex flex-col gap-1 ${glow('cpu')}`}>
             <CpuBadge
               persona={persona}
               difficulty={config.difficulty}
@@ -233,6 +281,7 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
 
             {ix.turn && (
               <>
+                <div className={`w-full ${glow('hand')}`}>
                 <HandTray
                   held={ix.held}
                   dealtCount={ix.turn.dealt.length}
@@ -244,7 +293,8 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
                   onUndoDiscard={ix.undo}
                   dragBind={drag.bind}
                 />
-                <div className="flex items-center gap-2">
+                </div>
+                <div className={`flex items-center gap-2 ${glow('confirm')}`}>
                   <button
                     type="button"
                     onClick={ix.undoLast}
@@ -271,6 +321,7 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
             )}
 
             {scored && result && (
+              <div className={`w-full ${glow('score')}`}>
               <ScoreStrip
                 result={result}
                 stage={reveal.stage}
@@ -281,10 +332,11 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
                 fantasylandNext={game.fantasylandNext.human}
                 cpuFantasylandNext={game.fantasylandNext.ai}
                 countMs={450 * motion}
-                onNext={api.deal}
+                onNext={deal}
                 onSkip={reveal.skip}
-                onDetails={() => setDialog('details')}
+                onDetails={() => setDialog({ kind: 'details' })}
               />
+              </div>
             )}
             </div>
             {prefs.helpers.tracker && (
@@ -294,7 +346,7 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
             )}
           </section>
 
-          <section aria-label="Your board" className="ofc-area-you flex flex-col gap-1">
+          <section aria-label="Your board" className={`ofc-area-you flex flex-col gap-1 ${glow('board')}`}>
             <div className="flex min-h-[1.25rem] flex-wrap items-center justify-between gap-x-2 gap-y-1 px-1">
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-black uppercase tracking-[0.2em] text-emerald-400/80">You</span>
@@ -343,25 +395,20 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
         </main>
       )}
 
-      {dialog === 'settings' && (
-        <SettingsModal
-          config={session.config}
-          locked={game.phase === 'placing'}
-          onConfig={api.setConfig}
-          onNewSession={api.newSession}
-          onClose={() => setDialog(null)}
-        />
-      )}
-      {dialog === 'tracker' && (
-        <Modal title="Cards remaining" onClose={() => setDialog(null)}>
-          <CardTracker unseen={view.unseen} />
-        </Modal>
-      )}
-      {dialog === 'details' && result && (
-        <Modal title="Hand result" onClose={() => setDialog(null)}>
-          <ResultDetails result={result} cpuName={persona.name} stake={config.stake} />
-        </Modal>
-      )}
+      <CoachPanel tutorial={tutorial} />
+      <AchievementToasts
+        ids={scored && reveal.done ? api.unlocked : []}
+        onOpen={() => setDialog({ kind: 'profile', tab: 'achievements' })}
+      />
+      <Dialogs
+        dialog={dialog}
+        setDialog={setDialog}
+        api={api}
+        unseen={view.unseen}
+        result={result}
+        install={install}
+        onStartTutorial={startTutorial}
+      />
     </div>
   );
 };
