@@ -2,7 +2,12 @@
 
 Single-player **Open Face Chinese Poker** against a CPU opponent. React 18 + TypeScript + Vite + Tailwind CSS v4, deployed to Cloudflare with `wrangler`.
 
-> Work in progress: Phases 1 (rules engine), 2 (Monte Carlo CPU), 3 (game feel) and 4 (progression) are complete. See [Roadmap](#roadmap).
+Play Classic or Pineapple Open Face Chinese Poker against a CPU with three difficulty levels, with royalties, Fantasyland, hand replay, a tutorial and offline support.
+
+| Table (desktop) | Phone | Result | Replay |
+|---|---|---|---|
+| ![Table on desktop](docs/screenshots/table-desktop.png) | ![Table on a phone](docs/screenshots/table-phone.png) | ![Scored hand](docs/screenshots/result-phone.png) | ![Hand replay](docs/screenshots/replay-phone.png) |
+
 
 ## Run, test, deploy
 
@@ -12,7 +17,7 @@ npm run dev          # local dev server
 npm test             # Vitest unit tests (engine, AI, state)
 npm run typecheck    # tsc --noEmit (strict)
 npm run build        # typecheck + production build into dist/
-npm run deploy       # build, then `wrangler deploy` (needs `wrangler login` first)
+npm run deploy       # typecheck + build, then `wrangler deploy` (run `npx wrangler login` once first)
 ```
 
 ## How the game is built
@@ -185,4 +190,10 @@ PARAMS_A='{"sims":60}' npx vite-node scripts/bench-ai.ts medium easy 20 10   # o
 2. ✅ **Monte Carlo CPU:** three levels, Web Worker, names and personalities, optional move explanations.
 3. ✅ **Game feel:** card flights and flips, row-by-row score reveal, tap / drag / keyboard input with undo, live helpers, synthesised sound, responsive layouts, accessibility.
 4. ✅ **Progression:** settings, autosave with resume, lifetime stats, hand history and replay, tutorial, achievements, offline PWA.
-5. Lighthouse pass, deployment polish, screenshots.
+5. ✅ **Polish and ship:** Lighthouse 100 / 100 / 100 / 100 (mobile and desktop), lazy-loaded dialogs, Wrangler 4, SPA fallback, screenshots.
+
+## Performance and deployment
+
+* **Lighthouse** (production build, headless Chromium, mobile profile): Performance 100, Accessibility 100, Best Practices 100, SEO 100; LCP 1.7 s, TBT 10 ms, CLS 0. Desktop: LCP 0.4 s.
+* **Bundle:** about 82 KB gzipped for the first load (React, the engine, the UI). The dialogs (replay, stats, rules, settings) are a separate 9 KB chunk loaded on first use, and the CPU runs from its own 15 KB worker file. No animation or sound libraries: card motion uses the Web Animations API and sound is synthesised.
+* **Deploy:** the app is a static site served by Cloudflare Workers Assets (`wrangler.json`, with single-page-app fallback). `npm run deploy` runs the typechecked build and then `wrangler deploy`. `npx wrangler deploy --dry-run` checks the packaging without logging in: it was verified to read all 14 files from `dist/`. A real deploy needs `npx wrangler login` (or `CLOUDFLARE_API_TOKEN`), which was not available while building this.
