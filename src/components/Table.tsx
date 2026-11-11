@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { Check, Sparkles, Undo2 } from 'lucide-react';
 import { personaFor, quipForResult, quipForStart } from '../ai';
 import {
@@ -28,12 +28,15 @@ import CardTracker from './CardTracker';
 import CoachPanel from './CoachPanel';
 import CpuBadge from './CpuBadge';
 import DeckPile from './DeckPile';
-import Dialogs, { type Dialog } from './Dialogs';
+import type { Dialog } from './Dialogs';
 import FoulChip from './FoulChip';
 import HandTray from './HandTray';
 import Header from './Header';
 import ScoreStrip from './ScoreStrip';
 import StartScreen from './StartScreen';
+
+// Dialogs (replay, stats, rules, settings...) are loaded the first time one is opened.
+const Dialogs = lazy(() => import('./Dialogs'));
 
 const REVEAL_STEP_MS = 650;
 const FLASH_MS = 3200;
@@ -400,15 +403,19 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
         ids={scored && reveal.done ? api.unlocked : []}
         onOpen={() => setDialog({ kind: 'profile', tab: 'achievements' })}
       />
-      <Dialogs
-        dialog={dialog}
-        setDialog={setDialog}
-        api={api}
-        unseen={view.unseen}
-        result={result}
-        install={install}
-        onStartTutorial={startTutorial}
-      />
+      {dialog && (
+        <Suspense fallback={null}>
+          <Dialogs
+            dialog={dialog}
+            setDialog={setDialog}
+            api={api}
+            unseen={view.unseen}
+            result={result}
+            install={install}
+            onStartTutorial={startTutorial}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };
