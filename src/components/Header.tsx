@@ -1,5 +1,5 @@
 import React from 'react';
-import { Coins, Crown, Layers, Menu, Volume2, VolumeX } from 'lucide-react';
+import { CircleHelp, Coins, Crown, Layers, Menu, Volume2, VolumeX } from 'lucide-react';
 
 interface HeaderProps {
   bankroll: number;
@@ -11,6 +11,7 @@ interface HeaderProps {
   onToggleSound: () => void;
   onOpenTracker: () => void;
   onOpenMenu: () => void;
+  onOpenHelp: () => void;
 }
 
 const IconButton: React.FC<{
@@ -41,6 +42,7 @@ const Header: React.FC<HeaderProps> = ({
   onToggleSound,
   onOpenTracker,
   onOpenMenu,
+  onOpenHelp,
 }) => (
   <header className="ofc-header z-20 flex items-center justify-between gap-2 px-2 pt-2 [@media(max-height:720px)]:pt-1 sm:px-4">
     <div className="flex min-w-0 items-center gap-1.5">
@@ -76,6 +78,9 @@ const Header: React.FC<HeaderProps> = ({
       )}
       <IconButton label={soundOn ? 'Mute sound' : 'Turn sound on'} pressed={!soundOn} onClick={onToggleSound}>
         {soundOn ? <Volume2 size={16} aria-hidden="true" /> : <VolumeX size={16} aria-hidden="true" />}
+      </IconButton>
+      <IconButton label="How to play" onClick={onOpenHelp}>
+        <CircleHelp size={16} aria-hidden="true" />
       </IconButton>
       <IconButton label="Menu" onClick={onOpenMenu}>
         <Menu size={16} aria-hidden="true" />

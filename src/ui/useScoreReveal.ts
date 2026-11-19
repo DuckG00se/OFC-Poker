@@ -14,7 +14,14 @@ export interface ScoreReveal {
  * appears (a resumed game) is shown complete, without replaying the sequence. With
  * `stepMs` of 0 (reduced motion) everything appears at once.
  */
-export const useScoreReveal = (handKey: string | null, steps: number, stepMs: number): ScoreReveal => {
+export const useScoreReveal = (
+  handKey: string | null,
+  steps: number,
+  stepMs: number,
+  paused = false,
+): ScoreReveal => {
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
   const [revealed, setRevealed] = useState<{ key: string; stage: number } | null>(() =>
     handKey !== null ? { key: handKey, stage: steps } : null,
   );
@@ -30,6 +37,7 @@ export const useScoreReveal = (handKey: string | null, steps: number, stepMs: nu
     let stage = 0;
     setRevealed({ key: handKey, stage: 0 });
     const id = window.setInterval(() => {
+      if (pausedRef.current) return;
       if (finished.current === handKey) {
         window.clearInterval(id);
         return;

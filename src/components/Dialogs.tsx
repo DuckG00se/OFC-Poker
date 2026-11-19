@@ -11,7 +11,7 @@ import Modal from './Modal';
 import ProfileModal, { type ProfileTab } from './ProfileModal';
 import ReplayView from './ReplayView';
 import ResultDetails from './ResultDetails';
-import RulesModal from './RulesModal';
+import HowToPlay from './howto/HowToPlay';
 import SettingsModal from './SettingsModal';
 
 export type Dialog =
@@ -92,7 +92,7 @@ const Dialogs: React.FC<DialogsProps> = ({ dialog, setDialog, api, unseen, resul
       ) : null;
     case 'rules':
       return (
-        <RulesModal
+        <HowToPlay
           onClose={close}
           onStartTutorial={() => {
             onStartTutorial();

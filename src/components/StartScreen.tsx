@@ -58,9 +58,9 @@ const StartScreen: React.FC<StartScreenProps> = ({ config, onConfig, onDeal, gui
           <button
             type="button"
             onClick={onRules}
-            className="flex items-center gap-1.5 font-black uppercase tracking-wider text-[#e7c25d] hover:underline"
+            className="flex items-center gap-1.5 rounded-full border border-[#d4af37]/40 px-3 py-1.5 font-black uppercase tracking-wider text-[#e7c25d] transition hover:bg-[#d4af37]/10"
           >
-            <BookOpen size={13} aria-hidden="true" /> Rules
+            <BookOpen size={13} aria-hidden="true" /> How to play
           </button>
         </div>
       </div>

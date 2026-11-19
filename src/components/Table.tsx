@@ -54,6 +54,12 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
   const motion = useMotionScale();
   const [dialog, setDialog] = useState<Dialog>(null);
   const install = useInstallPrompt();
+  // Any open dialog (rules, menu, settings...) freezes the CPU and the score reveal.
+  const { setPaused } = api;
+  useEffect(() => {
+    setPaused(dialog !== null);
+    return () => setPaused(false);
+  }, [dialog, setPaused]);
   // A passing message in the status line (e.g. "your game was restored").
   const [flash, setFlash] = useState<string | null>(() =>
     game.phase === 'placing' && game.log.length > 1 ? 'Welcome back: your hand was saved' : null,
@@ -73,7 +79,7 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
   const result = game.result;
   const scored = game.phase === 'scored' && result !== null;
   const plan = useMemo(() => revealPlan(result), [result]);
-  const reveal = useScoreReveal(scored ? seed : null, plan.total, REVEAL_STEP_MS * motion);
+  const reveal = useScoreReveal(scored ? seed : null, plan.total, REVEAL_STEP_MS * motion, dialog !== null);
   useGameFeedback(game, { sound: prefs.sound, haptics: prefs.haptics, stage: reveal.stage, plan });
 
   const tutorial = useTutorial({
@@ -218,6 +224,7 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
         onToggleSound={() => update({ sound: !prefs.sound })}
         onOpenTracker={() => setDialog({ kind: 'tracker' })}
         onOpenMenu={() => setDialog({ kind: 'menu' })}
+        onOpenHelp={() => setDialog({ kind: 'rules' })}
       />
 
       {game.phase === 'idle' ? (

@@ -16,6 +16,8 @@ import type { HandRecord, LifetimeStats } from './stats';
 const THINK_BASE_MS: Readonly<Record<Difficulty, number>> = { easy: 500, medium: 800, hard: 1100 };
 /** Pause between the CPU's individual placements within one turn. */
 const AI_STEP_MS = 260;
+/** How often a paused delay checks whether it may continue. */
+const PAUSE_TICK_MS = 50;
 
 const jitter = (key: string): number => {
   let h = 2166136261;
@@ -39,6 +41,8 @@ export interface GameApi {
   achievements: Readonly<Record<string, number>>;
   /** Achievements unlocked by the hand that was just scored. */
   unlocked: readonly string[];
+  /** Freeze (true) or resume (false) the CPU's thinking and pacing, e.g. while a dialog is open. */
+  setPaused: (paused: boolean) => void;
   /** True while the CPU is choosing or making its move. */
   aiThinking: boolean;
   /** The CPU's explanation of its latest notable move, if it gave one. */
@@ -86,6 +90,11 @@ export const useGame = (initial?: AppState): GameApi => {
   const aiTurnKey =
     game.phase === 'placing' && turn?.seat === 'ai' ? `${game.setup?.seed}#${turn.street}` : null;
 
+  const pausedRef = useRef(false);
+  const setPaused = useCallback((paused: boolean) => {
+    pausedRef.current = paused;
+  }, []);
+
   useEffect(() => {
     if (aiTurnKey === null) return;
     const g = gameRef.current;
@@ -96,31 +105,44 @@ export const useGame = (initial?: AppState): GameApi => {
     let cancelled = false;
     const timers: number[] = [];
     const difficulty = setup.config.difficulty;
-    const wait = new Promise<void>((resolve) => {
-      timers.push(
-        window.setTimeout(resolve, THINK_BASE_MS[difficulty] + jitter(aiTurnKey)),
-      );
-    });
 
-    Promise.all([client.choose(viewFor(g, 'ai'), difficulty, `${aiTurnKey}:ai`), wait])
-      .then(([plan]) => {
-        if (cancelled) return;
-        setAiNote(plan.reason ? { text: plan.reason, handSeed: setup.seed } : null);
-        planToActions('ai', plan).forEach((action, i) => {
-          timers.push(
-            window.setTimeout(() => {
-              if (!cancelled) dispatch({ type: 'GAME', action, at: Date.now() });
-            }, i * AI_STEP_MS),
-          );
-        });
-      })
-      .catch(() => {
-        // Cancelled or the client was disposed: nothing to do.
+    /** A delay that only counts down while the game is not paused. */
+    const wait = (ms: number): Promise<void> =>
+      new Promise((resolve) => {
+        let left = ms;
+        const id = window.setInterval(() => {
+          if (pausedRef.current) return;
+          left -= PAUSE_TICK_MS;
+          if (left <= 0) {
+            window.clearInterval(id);
+            resolve();
+          }
+        }, PAUSE_TICK_MS);
+        timers.push(id);
       });
+
+    const run = async (): Promise<void> => {
+      const [plan] = await Promise.all([
+        client.choose(viewFor(g, 'ai'), difficulty, `${aiTurnKey}:ai`),
+        wait(THINK_BASE_MS[difficulty] + jitter(aiTurnKey)),
+      ]);
+      if (cancelled) return;
+      setAiNote(plan.reason ? { text: plan.reason, handSeed: setup.seed } : null);
+      const actions = planToActions('ai', plan);
+      for (let i = 0; i < actions.length; i++) {
+        if (i > 0) await wait(AI_STEP_MS);
+        if (cancelled) return;
+        const action = actions[i];
+        if (action) dispatch({ type: 'GAME', action, at: Date.now() });
+      }
+    };
+    run().catch(() => {
+      // Cancelled or the client was disposed: nothing to do.
+    });
 
     return () => {
       cancelled = true;
-      timers.forEach(window.clearTimeout);
+      timers.forEach(window.clearInterval);
       clientRef.current?.cancelPending();
     };
   }, [aiTurnKey]);
@@ -177,6 +199,7 @@ export const useGame = (initial?: AppState): GameApi => {
       history: app.history,
       achievements: app.achievements,
       unlocked: app.unlocked,
+      setPaused,
       aiThinking,
       aiNote,
       place,
@@ -189,6 +212,6 @@ export const useGame = (initial?: AppState): GameApi => {
       newSession,
       resetAll,
     }),
-    [app, game, session, aiThinking, aiNote, place, move, discard, undo, confirm, deal, setConfig, newSession, resetAll],
+    [app, game, session, setPaused, aiThinking, aiNote, place, move, discard, undo, confirm, deal, setConfig, newSession, resetAll],
   );
 };

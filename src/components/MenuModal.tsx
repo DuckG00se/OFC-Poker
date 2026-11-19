@@ -35,7 +35,7 @@ const Item: React.FC<{
 const MenuModal: React.FC<MenuModalProps> = ({ canInstall, unlockedCount, totalAchievements, handsInHistory, onChoose, onClose }) => (
   <Modal title="Menu" onClose={onClose}>
     <div className="flex flex-col gap-2">
-      <Item icon={<BookOpen size={17} aria-hidden="true" />} title="Rules and royalties" detail="How the game is scored, with the full royalty table" onClick={() => onChoose('rules')} />
+      <Item icon={<BookOpen size={17} aria-hidden="true" />} title="How to play" detail="The rules, scoring and royalties, with examples" onClick={() => onChoose('rules')} />
       <Item icon={<GraduationCap size={17} aria-hidden="true" />} title="Guided hand" detail="A walkthrough of your next hand, step by step" onClick={() => onChoose('tutorial')} />
       <Item icon={<BarChart3 size={17} aria-hidden="true" />} title="Stats" detail="Win rate, foul rate, biggest win and more" onClick={() => onChoose('stats')} />
       <Item icon={<Trophy size={17} aria-hidden="true" />} title="Achievements" detail={`${unlockedCount} of ${totalAchievements} unlocked`} onClick={() => onChoose('achievements')} />
