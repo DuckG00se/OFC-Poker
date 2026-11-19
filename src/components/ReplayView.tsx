@@ -201,7 +201,7 @@ const ReplayView: React.FC<ReplayViewProps> = ({ record, cpuName, onClose }) => 
 
           {result && (
             <div className="ofc-pop border-t border-white/5 pt-3">
-              <ResultDetails result={result} cpuName={cpuName} stake={record.stake} />
+              <ResultDetails result={result} cpuName={cpuName} />
             </div>
           )}
         </div>

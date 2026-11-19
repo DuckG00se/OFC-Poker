@@ -3,6 +3,7 @@ import {
   gameReducer,
   initialGameState,
   settleHand,
+  sessionScore,
   setupForSession,
   type Action,
   type GameConfig,
@@ -39,7 +40,7 @@ export type AppAction =
   | { type: 'DEAL' }
   /** Change settings; ignored while a hand is in progress. */
   | { type: 'CONFIG'; patch: Partial<GameConfig> }
-  /** Fresh bankroll and a new seed, keeping settings, stats, history and achievements. */
+  /** Fresh score and a new seed, keeping settings, stats, history and achievements. */
   | { type: 'NEW_SESSION'; seed: string }
   /** Wipe everything back to a first launch. */
   | { type: 'RESET_ALL'; seed: string };
@@ -63,7 +64,7 @@ const settle = (state: AppState, game: GameState, at: number): AppState => {
     record,
     result: game.result,
     stats,
-    bankroll: session.bankroll,
+    score: sessionScore(session),
   });
   const achievements = { ...state.achievements };
   for (const id of unlocked) achievements[id] = at;

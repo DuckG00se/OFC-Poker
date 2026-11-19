@@ -11,7 +11,9 @@ import Modal from './Modal';
 import ProfileModal, { type ProfileTab } from './ProfileModal';
 import ReplayView from './ReplayView';
 import ResultDetails from './ResultDetails';
-import RulesModal from './RulesModal';
+import FoulExplainer from './howto/FoulExplainer';
+import HowToPlay from './howto/HowToPlay';
+import { usePrefs } from '../ui/prefs';
 import SettingsModal from './SettingsModal';
 
 export type Dialog =
@@ -19,6 +21,7 @@ export type Dialog =
   | { kind: 'settings' }
   | { kind: 'tracker' }
   | { kind: 'details' }
+  | { kind: 'foul' }
   | { kind: 'rules' }
   | { kind: 'profile'; tab: ProfileTab }
   | { kind: 'replay'; record: HandRecord }
@@ -37,6 +40,7 @@ interface DialogsProps {
 
 /** Every dialog the table can open, in one place. */
 const Dialogs: React.FC<DialogsProps> = ({ dialog, setDialog, api, unseen, result, install, onStartTutorial }) => {
+  const { update } = usePrefs();
   if (!dialog) return null;
   const close = (): void => setDialog(null);
   const config = api.game.setup?.config ?? api.session.config;
@@ -75,6 +79,10 @@ const Dialogs: React.FC<DialogsProps> = ({ dialog, setDialog, api, unseen, resul
           onConfig={api.setConfig}
           onNewSession={api.newSession}
           onResetAll={api.resetAll}
+          onStartTutorial={() => {
+            onStartTutorial();
+            close();
+          }}
           onClose={close}
         />
       );
@@ -87,12 +95,29 @@ const Dialogs: React.FC<DialogsProps> = ({ dialog, setDialog, api, unseen, resul
     case 'details':
       return result ? (
         <Modal title="Hand result" onClose={close}>
-          <ResultDetails result={result} cpuName={personaFor(config.difficulty).name} stake={config.stake} />
+          <ResultDetails result={result} cpuName={personaFor(config.difficulty).name} />
         </Modal>
       ) : null;
+    case 'foul': {
+      // However it is closed (button, Esc, backdrop), the explainer counts as seen.
+      const seen = (): void => {
+        update({ foulExplained: true });
+        close();
+      };
+      return (
+        <FoulExplainer
+          board={api.game.seats.human.board}
+          onClose={seen}
+          onRules={() => {
+            update({ foulExplained: true });
+            setDialog({ kind: 'rules' });
+          }}
+        />
+      );
+    }
     case 'rules':
       return (
-        <RulesModal
+        <HowToPlay
           onClose={close}
           onStartTutorial={() => {
             onStartTutorial();

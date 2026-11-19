@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
-import { Check, Sparkles, Undo2 } from 'lucide-react';
+import { BookOpen, Check, Sparkles, Undo2 } from 'lucide-react';
 import { personaFor, quipForResult, quipForStart } from '../ai';
 import {
   ROW_NAMES,
@@ -7,6 +7,7 @@ import {
   evaluateRow,
   rowOuts,
   royaltyPreview,
+  sessionScore,
   viewFor,
   type RowName,
   type RowOuts,
@@ -21,11 +22,12 @@ import { useKeyboard } from '../ui/useKeyboard';
 import { usePointerDrag } from '../ui/usePointerDrag';
 import { useCountUp, useScoreReveal } from '../ui/useScoreReveal';
 import { useTurnInteraction } from '../ui/useTurnInteraction';
+import { describeProblem, orderProblems, shouldOfferWelcome } from '../ui/onboarding';
 import { useTutorial } from '../ui/useTutorial';
 import AchievementToasts from './AchievementToasts';
 import BoardView from './BoardView';
 import CardTracker from './CardTracker';
-import CoachPanel from './CoachPanel';
+import CoachPanel, { type CoachWarning } from './CoachPanel';
 import CpuBadge from './CpuBadge';
 import DeckPile from './DeckPile';
 import type { Dialog } from './Dialogs';
@@ -37,6 +39,9 @@ import StartScreen from './StartScreen';
 
 // Dialogs (replay, stats, rules, settings...) are loaded the first time one is opened.
 const Dialogs = lazy(() => import('./Dialogs'));
+// The quick reference and the first-launch welcome are loaded only when they are needed.
+const QuickRef = lazy(() => import('./howto/QuickRef'));
+const Welcome = lazy(() => import('./howto/Welcome'));
 
 const REVEAL_STEP_MS = 650;
 const FLASH_MS = 3200;
@@ -54,6 +59,14 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
   const motion = useMotionScale();
   const [dialog, setDialog] = useState<Dialog>(null);
   const install = useInstallPrompt();
+  // The quick reference floats over the table and never pauses the game.
+  const [quickRef, setQuickRef] = useState(false);
+  // Any open dialog (rules, menu, settings...) freezes the CPU and the score reveal.
+  const { setPaused } = api;
+  useEffect(() => {
+    setPaused(dialog !== null);
+    return () => setPaused(false);
+  }, [dialog, setPaused]);
   // A passing message in the status line (e.g. "your game was restored").
   const [flash, setFlash] = useState<string | null>(() =>
     game.phase === 'placing' && game.log.length > 1 ? 'Welcome back: your hand was saved' : null,
@@ -73,7 +86,7 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
   const result = game.result;
   const scored = game.phase === 'scored' && result !== null;
   const plan = useMemo(() => revealPlan(result), [result]);
-  const reveal = useScoreReveal(scored ? seed : null, plan.total, REVEAL_STEP_MS * motion);
+  const reveal = useScoreReveal(scored ? seed : null, plan.total, REVEAL_STEP_MS * motion, dialog !== null);
   useGameFeedback(game, { sound: prefs.sound, haptics: prefs.haptics, stage: reveal.stage, plan });
 
   const tutorial = useTutorial({
@@ -82,11 +95,11 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
     stagedCount: ix.stagedIds.size + ix.stagedDiscards.length,
     turnComplete: ix.complete,
     scoreShown: reveal.done,
-    onDone: () => update({ tutorialSeen: true }),
+    onDone: (outcome) => update({ tutorialStatus: outcome }),
   });
   // On the start screen: offer the guided hand until it has been seen once.
   const [guidedChoice, setGuided] = useState<boolean | null>(null);
-  const guided = guidedChoice ?? !prefs.tutorialSeen;
+  const guided = guidedChoice ?? prefs.tutorialStatus === 'unseen';
   const startTutorial = (): void => {
     tutorial.request();
     if (game.phase === 'placing') setFlash('The guided hand starts with your next deal');
@@ -99,7 +112,8 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
   const glow = (target: typeof coach): string => (coach !== null && coach === target ? 'ofc-coach-target' : '');
 
   const view = useMemo(() => viewFor(game, 'human'), [game]);
-  const foulRisk = useFoulRisk(game, prefs.helpers.foulWarning);
+  // The guided hand warns about fouls even if the player has switched the helper off.
+  const foulRisk = useFoulRisk(game, prefs.helpers.foulWarning || tutorial.active);
   const humanBoard = game.seats.human.board;
   const aiBoard = game.seats.ai.board;
 
@@ -111,6 +125,25 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
     [humanBoard, view.unseen, config.fantasyland],
   );
   const previewTotal = preview.front + preview.mid + preview.back;
+
+  // Guided hand: warn while a staged placement is heading for a foul, while it can still be undone.
+  const problems = useMemo(() => orderProblems(humanBoard), [humanBoard]);
+  const stagedAny = ix.stagedIds.size + ix.stagedDiscards.length > 0;
+  const risky = foulRisk.status === 'certain' || (foulRisk.risk ?? 0) >= 0.5;
+  const warning: CoachWarning | null =
+    tutorial.active && ix.turn !== null && stagedAny && risky
+      ? {
+          text: problems[0] ? describeProblem(problems[0]) : 'Your rows are heading out of order.',
+          percent: foulRisk.status === 'certain' ? null : Math.round((foulRisk.risk ?? 0) * 100),
+          onFix: ix.undoLast,
+        }
+      : null;
+
+  // The first time the player's board fouls, explain what happened (once).
+  const humanFouled = scored && !!result?.seats.human.fouled;
+  useEffect(() => {
+    if (humanFouled && reveal.done && !prefs.foulExplained && dialog === null) setDialog({ kind: 'foul' });
+  }, [humanFouled, reveal.done, prefs.foulExplained, dialog]);
 
   const rowsRevealed = Math.min(reveal.stage, plan.rows);
   const revealedRows = ROW_NAMES.slice(0, rowsRevealed);
@@ -151,10 +184,10 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
       ? api.aiNote.text
       : null;
 
-  // ---- Money: hold the old bankroll until the reveal is over, then count to the new one. ----
-  const payout = scored && result ? result.points.human * config.stake : 0;
-  const bankroll = useCountUp(
-    scored && !reveal.done ? session.bankroll - payout : session.bankroll,
+  // ---- Score: hold the old total until the reveal is over, then count up to the new one. ----
+  const handPoints = scored && result ? result.points.human : 0;
+  const score = useCountUp(
+    scored && !reveal.done ? sessionScore(session) - handPoints : sessionScore(session),
     700 * motion,
   );
 
@@ -196,7 +229,10 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
     },
     onUndo: ix.undoLast,
     onCycle: ix.cycle,
-    onEscape: ix.clearSelection,
+    onEscape: () => {
+      ix.clearSelection();
+      setQuickRef(false);
+    },
   });
 
   const handNo = game.phase === 'scored' ? session.handNo - 1 : session.handNo;
@@ -209,8 +245,7 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1.5 bg-gradient-to-t from-[#4a2014] to-[#26100a]" />
 
       <Header
-        bankroll={bankroll}
-        stake={config.stake}
+        score={score}
         handNo={Math.max(1, handNo)}
         variant={config.variant}
         soundOn={prefs.sound}
@@ -218,9 +253,20 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
         onToggleSound={() => update({ sound: !prefs.sound })}
         onOpenTracker={() => setDialog({ kind: 'tracker' })}
         onOpenMenu={() => setDialog({ kind: 'menu' })}
+        onOpenHelp={() => setDialog({ kind: 'rules' })}
       />
 
-      {game.phase === 'idle' ? (
+      {game.phase === 'idle' && shouldOfferWelcome(prefs, api.stats.handsPlayed, game.phase) ? (
+        <Suspense fallback={null}>
+          <Welcome
+            onKnow={() => update({ tutorialStatus: 'skipped' })}
+            onStartGuided={() => {
+              tutorial.request();
+              api.deal();
+            }}
+          />
+        </Suspense>
+      ) : game.phase === 'idle' ? (
         <StartScreen
           config={session.config}
           onConfig={api.setConfig}
@@ -329,7 +375,6 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
                 stage={reveal.stage}
                 plan={plan}
                 done={reveal.done}
-                stake={config.stake}
                 cpuName={persona.name}
                 fantasylandNext={game.fantasylandNext.human}
                 cpuFantasylandNext={game.fantasylandNext.ai}
@@ -364,6 +409,17 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
                 )}
               </div>
               <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  aria-expanded={quickRef}
+                  aria-controls="quick-ref"
+                  onClick={() => setQuickRef((open) => !open)}
+                  className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-wider transition ${
+                    quickRef ? 'border-[#d4af37] bg-[#d4af37]/15 text-[#e7c25d]' : 'border-white/10 text-stone-300 hover:border-[#d4af37]/50'
+                  }`}
+                >
+                  <BookOpen size={10} aria-hidden="true" /> Quick ref
+                </button>
                 {!scored && prefs.helpers.royalties && previewTotal > 0 && (
                   <span
                     title="Royalties locked in so far, if the board does not foul"
@@ -397,7 +453,12 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
         </main>
       )}
 
-      <CoachPanel tutorial={tutorial} />
+      {quickRef && (
+        <Suspense fallback={null}>
+          <QuickRef onClose={() => setQuickRef(false)} />
+        </Suspense>
+      )}
+      <CoachPanel tutorial={tutorial} warning={warning} />
       <AchievementToasts
         ids={scored && reveal.done ? api.unlocked : []}
         onOpen={() => setDialog({ kind: 'profile', tab: 'achievements' })}

@@ -7,11 +7,10 @@ const signed = (n: number): string => (n > 0 ? `+${n}` : String(n));
 interface ResultDetailsProps {
   result: HandScore;
   cpuName: string;
-  stake: number;
 }
 
 /** The full scoring breakdown for a finished hand. */
-const ResultDetails: React.FC<ResultDetailsProps> = ({ result, cpuName, stake }) => {
+const ResultDetails: React.FC<ResultDetailsProps> = ({ result, cpuName }) => {
   const { human, ai } = result.seats;
   const points = result.points.human;
   const anyFoul = human.fouled || ai.fouled;
@@ -65,10 +64,10 @@ const ResultDetails: React.FC<ResultDetailsProps> = ({ result, cpuName, stake })
           </tr>
           <tr className="border-t border-[#d4af37]/30">
             <th scope="row" colSpan={3} className="py-2 text-left font-black text-white">
-              Total: {signed(points)} points × ${stake}
+              Total
             </th>
             <td className={`py-2 text-right font-black ${points > 0 ? 'text-emerald-400' : points < 0 ? 'text-rose-400' : 'text-stone-300'}`}>
-              {points < 0 ? '-' : '+'}${Math.abs(points * stake).toLocaleString()}
+              {signed(points)} pts
             </td>
           </tr>
         </tbody>

@@ -16,9 +16,8 @@ export interface LifetimeStats {
   royaltiesEarned: number;
   /** Net points over every hand. */
   netPoints: number;
-  /** Largest single-hand win and loss, in points and in money. */
+  /** Largest single-hand win and loss, in points. */
   biggestWinPoints: number;
-  biggestWinMoney: number;
   biggestLossPoints: number;
   currentCleanStreak: number;
   bestCleanStreak: number;
@@ -37,7 +36,6 @@ export const EMPTY_STATS: LifetimeStats = {
   royaltiesEarned: 0,
   netPoints: 0,
   biggestWinPoints: 0,
-  biggestWinMoney: 0,
   biggestLossPoints: 0,
   currentCleanStreak: 0,
   bestCleanStreak: 0,
@@ -54,10 +52,8 @@ export interface HandRecord {
   at: number;
   variant: Variant;
   difficulty: Difficulty;
-  stake: number;
-  /** Net points and money for the player. */
+  /** Net points for the player. */
   points: number;
-  payout: number;
   humanFouled: boolean;
   cpuFouled: boolean;
   /** +3 / -3 scoop bonus from the player's side (also set for fouls), else 0. */
@@ -84,9 +80,7 @@ export const recordHand = (game: GameState, handNo: number, at: number): HandRec
     at,
     variant: setup.config.variant,
     difficulty: setup.config.difficulty,
-    stake: setup.config.stake,
     points: result.points.human,
-    payout: result.points.human * setup.config.stake,
     humanFouled: result.seats.human.fouled,
     cpuFouled: result.seats.ai.fouled,
     scoop: result.scoop,
@@ -116,7 +110,6 @@ export const addHandToStats = (stats: LifetimeStats, record: HandRecord): Lifeti
     royaltiesEarned: stats.royaltiesEarned + record.royalties,
     netPoints: stats.netPoints + record.points,
     biggestWinPoints: Math.max(stats.biggestWinPoints, record.points),
-    biggestWinMoney: Math.max(stats.biggestWinMoney, record.payout),
     biggestLossPoints: Math.min(stats.biggestLossPoints, record.points),
     currentCleanStreak: cleanStreak,
     bestCleanStreak: Math.max(stats.bestCleanStreak, cleanStreak),

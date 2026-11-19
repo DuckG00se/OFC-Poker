@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { rowTip } from './howto/royaltyHint';
 import { ROW_NAMES, ROW_SIZE, type Board, type RowName, type RowOuts } from '../engine';
 import Card from './Card';
 
@@ -56,7 +57,10 @@ const BoardView: React.FC<BoardViewProps> = ({
   onSlotClick,
   onStagedClick,
   dragBind,
-}) => (
+}) => {
+  // Which row's label was tapped, to show what it makes and pays.
+  const [tipRow, setTipRow] = useState<RowName | null>(null);
+  return (
   <div
     className={`relative flex flex-col rounded-2xl border p-1 transition-colors duration-500 sm:rounded-3xl sm:p-2 ${
       size === 'human' ? 'cards-human gap-0.5' : size === 'cpu' ? 'cards-cpu gap-0' : 'cards-replay gap-0'
@@ -92,9 +96,20 @@ const BoardView: React.FC<BoardViewProps> = ({
         >
           <div className="flex h-3.5 [@media(max-height:720px)]:h-3 items-center justify-between gap-2 px-0.5 text-[10px] leading-none">
             <span className="flex min-w-0 items-center gap-1.5">
-              <span className={`font-black uppercase tracking-[0.16em] ${won ? 'text-[#d4af37]' : 'text-stone-400'}`}>
-                {ROW_LABEL[row]}
-              </span>
+              {hidden ? (
+                <span className="font-black uppercase tracking-[0.16em] text-stone-400">{ROW_LABEL[row]}</span>
+              ) : (
+                <button
+                  type="button"
+                  aria-expanded={tipRow === row}
+                  aria-controls={`tip-${size}-${row}`}
+                  title={rowTip(cards, row)}
+                  onClick={() => setTipRow((r) => (r === row ? null : row))}
+                  className={`-mx-1 rounded px-1 font-black uppercase tracking-[0.16em] underline decoration-dotted decoration-white/25 underline-offset-2 transition hover:text-[#e7c25d] ${won ? 'text-[#d4af37]' : 'text-stone-400'}`}
+                >
+                  {ROW_LABEL[row]}
+                </button>
+              )}
               {interactive && (
                 <kbd className="ofc-kbd-hint rounded border border-white/10 px-1 text-[9px] font-bold text-stone-400">
                   {ROW_KEY[row]}
@@ -110,6 +125,15 @@ const BoardView: React.FC<BoardViewProps> = ({
             </span>
           </div>
 
+          {tipRow === row && !hidden && (
+            <p
+              id={`tip-${size}-${row}`}
+              role="status"
+              className="ofc-pop mx-0.5 mb-0.5 rounded-lg border border-[#d4af37]/30 bg-[#d4af37]/10 px-2 py-1 text-[11px] leading-snug text-[#f0d98a]"
+            >
+              {rowTip(cards, row)}
+            </p>
+          )}
           <div className="flex items-center justify-center gap-[max(3px,0.9vw)] sm:gap-2">
             {cards.map((card, index) => {
               const staged = stagedIds?.has(card.id) ?? false;
@@ -164,6 +188,7 @@ const BoardView: React.FC<BoardViewProps> = ({
       );
     })}
   </div>
-);
+  );
+};
 
 export default BoardView;

@@ -12,9 +12,7 @@ const record = (patch: Partial<HandRecord> = {}): HandRecord => ({
   at: 1,
   variant: 'classic',
   difficulty: 'medium',
-  stake: 5,
   points: 0,
-  payout: 0,
   humanFouled: false,
   cpuFouled: false,
   scoop: 0,
@@ -27,12 +25,11 @@ const record = (patch: Partial<HandRecord> = {}): HandRecord => ({
 
 describe('lifetime stats', () => {
   it('counts wins, losses, ties and money', () => {
-    let s = addHandToStats(EMPTY_STATS, record({ points: 6, payout: 30, scoop: 3 }));
-    s = addHandToStats(s, record({ points: -2, payout: -10 }));
+    let s = addHandToStats(EMPTY_STATS, record({ points: 6, scoop: 3 }));
+    s = addHandToStats(s, record({ points: -2 }));
     s = addHandToStats(s, record({ points: 0 }));
     expect(s).toMatchObject({ handsPlayed: 3, handsWon: 1, handsLost: 1, handsTied: 1, netPoints: 4 });
     expect(s.biggestWinPoints).toBe(6);
-    expect(s.biggestWinMoney).toBe(30);
     expect(s.biggestLossPoints).toBe(-2);
     expect(s.scoops).toBe(1);
   });
@@ -68,11 +65,11 @@ describe('lifetime stats', () => {
 describe('achievements', () => {
   const strong = board('Js Jh 4d', 'Ks Kh Kd 7c 2s', 'As Ah Ad 9c 9d');
   const weak = board('2c 3d 5h', '3h 6d 9s Tc Jc', '4s 4h 8d Qd Qc');
-  const ctx = (patch: Partial<HandRecord>, stats = EMPTY_STATS, bankroll = 1000): AchievementContext => ({
+  const ctx = (patch: Partial<HandRecord>, stats = EMPTY_STATS, score = 0): AchievementContext => ({
     record: record(patch),
     result: scoreHand({ human: strong, ai: weak }),
     stats,
-    bankroll,
+    score,
   });
 
   it('every achievement has a unique id, a title and a description', () => {
@@ -116,7 +113,8 @@ describe('achievements', () => {
     expect(newlyEarned({}, ctx({ difficulty: 'hard', points: 1 }))).toContain('beat-hard');
     expect(newlyEarned({}, ctx({ difficulty: 'hard', points: -1 }))).not.toContain('beat-hard');
     expect(newlyEarned({}, ctx({ variant: 'pineapple', points: 1 }))).toContain('pineapple-win');
-    expect(newlyEarned({}, ctx({}, EMPTY_STATS, 2000))).toContain('bankroll-double');
+    expect(newlyEarned({}, ctx({}, EMPTY_STATS, 99))).not.toContain('score-100');
+    expect(newlyEarned({}, ctx({}, EMPTY_STATS, 100))).toContain('score-100');
   });
 });
 

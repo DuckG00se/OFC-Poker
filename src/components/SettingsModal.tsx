@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { GameConfig } from '../engine';
+import { resetOnboarding } from '../ui/onboarding';
 import { DEFAULT_PREFS, usePrefs, type CardBack, type MotionLevel } from '../ui/prefs';
 import Modal from './Modal';
 import SettingsPanel from './SettingsPanel';
@@ -11,8 +12,10 @@ interface SettingsModalProps {
   locked: boolean;
   onConfig: (patch: Partial<GameConfig>) => void;
   onNewSession: () => void;
-  /** Erase everything: bankroll, stats, history, achievements and preferences. */
+  /** Erase everything: score, stats, history, achievements and preferences. */
   onResetAll: () => void;
+  /** Replay the guided hand on the next deal. */
+  onStartTutorial: () => void;
   onClose: () => void;
 }
 
@@ -35,7 +38,7 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
   </section>
 );
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ config, locked, onConfig, onNewSession, onResetAll, onClose }) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({ config, locked, onConfig, onNewSession, onResetAll, onStartTutorial, onClose }) => {
   const { prefs, update, setHelper } = usePrefs();
   const [confirmReset, setConfirmReset] = useState(false);
   return (
@@ -119,9 +122,32 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ config, locked, onConfig,
         <Toggle label="CPU move reasons" description="A short explanation of some CPU moves" checked={prefs.cpuHints} onChange={(cpuHints) => update({ cpuHints })} />
       </Section>
 
+      <Section title="Help">
+        <p className="mb-2 text-xs text-stone-400">New to the game, or want a refresher?</p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onStartTutorial}
+            className="rounded-full border border-[#d4af37]/50 px-4 py-1.5 text-xs font-black uppercase tracking-wider text-[#e7c25d] transition hover:bg-[#d4af37]/10"
+          >
+            Replay the guided hand
+          </button>
+          <button
+            type="button"
+            onClick={() => update(resetOnboarding(prefs))}
+            className="rounded-full border border-white/15 px-4 py-1.5 text-xs font-black uppercase tracking-wider text-stone-200 transition hover:border-[#d4af37]/50"
+          >
+            Show first-time tips again
+          </button>
+        </div>
+        <p className="mt-2 text-[11px] text-stone-400">
+          The second button brings back the guided-hand suggestion and the one-time foul explainer. (The welcome screen only appears before your very first hand.)
+        </p>
+      </Section>
+
       <Section title="Your data">
         <p className="mb-2 text-xs text-stone-400">
-          Your bankroll, settings, stats, history and any hand in progress are saved on this
+          Your score, settings, stats, history and any hand in progress are saved on this
           device only.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -133,7 +159,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ config, locked, onConfig,
             }}
             className="rounded-full border border-white/15 px-4 py-1.5 text-xs font-black uppercase tracking-wider text-stone-200 transition hover:border-[#d4af37]/50"
           >
-            New session (reset bankroll)
+            New session (reset score)
           </button>
           <button
             type="button"

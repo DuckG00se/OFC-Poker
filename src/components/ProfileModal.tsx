@@ -22,7 +22,6 @@ const TABS: readonly { id: ProfileTab; label: string }[] = [
 ];
 
 const signed = (n: number): string => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : '0');
-const money = (n: number): string => `${n < 0 ? '−' : n > 0 ? '+' : ''}$${Math.abs(n).toLocaleString()}`;
 
 const Tile: React.FC<{ label: string; value: string; hint?: string }> = ({ label, value, hint }) => (
   <div className="rounded-2xl border border-white/5 bg-white/5 px-3 py-2.5">
@@ -41,7 +40,7 @@ const StatsTab: React.FC<{ stats: LifetimeStats }> = ({ stats }) => {
       <Tile label="Win rate" value={`${rate(stats.handsWon, n)}%`} hint={`${stats.handsWon} won · ${stats.handsLost} lost · ${stats.handsTied} tied`} />
       <Tile label="Foul rate" value={`${rate(stats.fouls, n)}%`} hint={`${stats.fouls} fouled`} />
       <Tile label="Fantasyland rate" value={`${rate(stats.fantasylands, n)}%`} hint={`${stats.fantasylands} earned`} />
-      <Tile label="Biggest win" value={`${signed(stats.biggestWinPoints)} pts`} hint={money(stats.biggestWinMoney)} />
+      <Tile label="Biggest win" value={`${signed(stats.biggestWinPoints)} pts`} />
       <Tile label="Royalties earned" value={String(stats.royaltiesEarned)} hint="points, all hands" />
       <Tile label="Net points" value={signed(stats.netPoints)} />
       <Tile label="Scoops" value={String(stats.scoops)} />
@@ -124,7 +123,6 @@ const HistoryTab: React.FC<{ history: readonly HandRecord[]; onReplay: (r: HandR
             </span>
             <span className={`flex-none text-right text-sm font-black tabular-nums ${r.points > 0 ? 'text-emerald-400' : r.points < 0 ? 'text-rose-400' : 'text-stone-300'}`}>
               {signed(r.points)} pts
-              <span className="block text-[11px] font-bold">{money(r.payout)}</span>
             </span>
           </button>
         </li>
