@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
-import { Check, Sparkles, Undo2 } from 'lucide-react';
+import { BookOpen, Check, Sparkles, Undo2 } from 'lucide-react';
 import { personaFor, quipForResult, quipForStart } from '../ai';
 import {
   ROW_NAMES,
@@ -32,6 +32,7 @@ import DeckPile from './DeckPile';
 import type { Dialog } from './Dialogs';
 import FoulChip from './FoulChip';
 import HandTray from './HandTray';
+import QuickRef from './howto/QuickRef';
 import Header from './Header';
 import ScoreStrip from './ScoreStrip';
 import StartScreen from './StartScreen';
@@ -55,6 +56,8 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
   const motion = useMotionScale();
   const [dialog, setDialog] = useState<Dialog>(null);
   const install = useInstallPrompt();
+  // The quick reference floats over the table and never pauses the game.
+  const [quickRef, setQuickRef] = useState(false);
   // Any open dialog (rules, menu, settings...) freezes the CPU and the score reveal.
   const { setPaused } = api;
   useEffect(() => {
@@ -203,7 +206,10 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
     },
     onUndo: ix.undoLast,
     onCycle: ix.cycle,
-    onEscape: ix.clearSelection,
+    onEscape: () => {
+      ix.clearSelection();
+      setQuickRef(false);
+    },
   });
 
   const handNo = game.phase === 'scored' ? session.handNo - 1 : session.handNo;
@@ -370,6 +376,17 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
                 )}
               </div>
               <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  aria-expanded={quickRef}
+                  aria-controls="quick-ref"
+                  onClick={() => setQuickRef((open) => !open)}
+                  className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-wider transition ${
+                    quickRef ? 'border-[#d4af37] bg-[#d4af37]/15 text-[#e7c25d]' : 'border-white/10 text-stone-300 hover:border-[#d4af37]/50'
+                  }`}
+                >
+                  <BookOpen size={10} aria-hidden="true" /> Quick ref
+                </button>
                 {!scored && prefs.helpers.royalties && previewTotal > 0 && (
                   <span
                     title="Royalties locked in so far, if the board does not foul"
@@ -403,6 +420,7 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
         </main>
       )}
 
+      {quickRef && <QuickRef onClose={() => setQuickRef(false)} />}
       <CoachPanel tutorial={tutorial} />
       <AchievementToasts
         ids={scored && reveal.done ? api.unlocked : []}

@@ -4,6 +4,7 @@ import {
   FANTASYLAND,
   FOUL_PENALTY,
   FRONT_PAIR_MIN_RANK,
+  HAND_NAMES,
   HandCategory,
   MID_ROYALTIES,
   ROYAL_FLUSH_ROYALTY,
@@ -29,6 +30,7 @@ import {
   exampleIsCorrect,
 } from '../../src/components/howto/examples';
 import { board } from '../engine/helpers';
+import { lowestPayingHand, rowTip } from '../../src/components/howto/royaltyHint';
 
 const ev = (text: string, row: 'front' | 'mid' | 'back') => evaluateRow(parseCards(text), row);
 
@@ -165,5 +167,32 @@ describe('hand rankings cheat sheet', () => {
       expect(cur.category >= prev.category).toBe(true);
     }
     expect(RANKING_EXAMPLES).toHaveLength(10);
+  });
+});
+
+describe('row label tooltips (quick reference)', () => {
+  it('a complete row with a royalty states exactly what the engine pays', () => {
+    const cards = parseCards('Qs Qh 2d');
+    expect(rowTip(cards, 'front')).toBe(`Pair of Queens. Royalty: +${rowRoyalty(evaluateRow(cards, 'front'), 'front')} points, if your board does not foul.`);
+    const flush = parseCards('As 9s 7s 4s 2s');
+    expect(rowTip(flush, 'mid')).toContain(`+${MID_ROYALTIES[HandCategory.Flush]}`);
+    expect(rowTip(flush, 'back')).toContain(`+${BACK_ROYALTIES[HandCategory.Flush]}`);
+  });
+
+  it('a row that pays nothing says where payment starts', () => {
+    expect(rowTip(parseCards('5s 5h 2d'), 'front')).toContain('pair of 6s');
+    expect(rowTip(parseCards('Ks Kh 9d 5c 2d'), 'mid')).toContain('three of a kind');
+    expect(rowTip(parseCards('Ks Kh 9d 5c 2d'), 'back')).toContain('a straight or better');
+  });
+
+  it('an unfinished row says how many cards to go; an empty one says so', () => {
+    expect(rowTip(parseCards('Ks Kh'), 'mid')).toContain('3 cards to go');
+    expect(rowTip(parseCards('Ks Kh 9d 5c'), 'mid')).toContain('1 card to go');
+    expect(rowTip([], 'back')).toContain('Empty');
+  });
+
+  it('lowestPayingHand matches the tables', () => {
+    expect(lowestPayingHand('mid')).toBe(HAND_NAMES[HandCategory.Trips].toLowerCase());
+    expect(lowestPayingHand('back')).toBe(`a ${HAND_NAMES[HandCategory.Straight].toLowerCase()}`);
   });
 });
