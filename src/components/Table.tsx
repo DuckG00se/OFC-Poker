@@ -33,14 +33,15 @@ import DeckPile from './DeckPile';
 import type { Dialog } from './Dialogs';
 import FoulChip from './FoulChip';
 import HandTray from './HandTray';
-import QuickRef from './howto/QuickRef';
-import Welcome from './howto/Welcome';
 import Header from './Header';
 import ScoreStrip from './ScoreStrip';
 import StartScreen from './StartScreen';
 
 // Dialogs (replay, stats, rules, settings...) are loaded the first time one is opened.
 const Dialogs = lazy(() => import('./Dialogs'));
+// The quick reference and the first-launch welcome are loaded only when they are needed.
+const QuickRef = lazy(() => import('./howto/QuickRef'));
+const Welcome = lazy(() => import('./howto/Welcome'));
 
 const REVEAL_STEP_MS = 650;
 const FLASH_MS = 3200;
@@ -256,13 +257,15 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
       />
 
       {game.phase === 'idle' && shouldOfferWelcome(prefs, api.stats.handsPlayed, game.phase) ? (
-        <Welcome
-          onKnow={() => update({ tutorialStatus: 'skipped' })}
-          onStartGuided={() => {
-            tutorial.request();
-            api.deal();
-          }}
-        />
+        <Suspense fallback={null}>
+          <Welcome
+            onKnow={() => update({ tutorialStatus: 'skipped' })}
+            onStartGuided={() => {
+              tutorial.request();
+              api.deal();
+            }}
+          />
+        </Suspense>
       ) : game.phase === 'idle' ? (
         <StartScreen
           config={session.config}
@@ -450,7 +453,11 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
         </main>
       )}
 
-      {quickRef && <QuickRef onClose={() => setQuickRef(false)} />}
+      {quickRef && (
+        <Suspense fallback={null}>
+          <QuickRef onClose={() => setQuickRef(false)} />
+        </Suspense>
+      )}
       <CoachPanel tutorial={tutorial} warning={warning} />
       <AchievementToasts
         ids={scored && reveal.done ? api.unlocked : []}
