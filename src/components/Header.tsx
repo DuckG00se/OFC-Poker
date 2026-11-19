@@ -42,7 +42,7 @@ const Header: React.FC<HeaderProps> = ({
   onOpenTracker,
   onOpenMenu,
 }) => (
-  <header className="ofc-header z-20 flex items-center justify-between gap-2 px-2 pt-2 sm:px-4">
+  <header className="ofc-header z-20 flex items-center justify-between gap-2 px-2 pt-2 [@media(max-height:720px)]:pt-1 sm:px-4">
     <div className="flex min-w-0 items-center gap-1.5">
       <Crown size={16} className="flex-none text-[#d4af37]" aria-hidden="true" />
       <div className="min-w-0 leading-tight">

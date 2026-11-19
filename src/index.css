@@ -45,7 +45,16 @@ body {
   max-width: 48rem;
 }
 .ofc-header { width: 100%; max-width: 48rem; }
-.ofc-center-inner { width: 100%; }
+.ofc-center-inner {
+  width: 100%;
+  min-height: calc(var(--card-human) * 1.4 + 5.6rem);
+}
+/* Short screens (a phone like an iPhone SE): trim the chrome, never the cards. */
+@media (max-height: 720px) {
+  .ofc-center-inner { min-height: calc(var(--card-human) * 1.4 + 4rem); gap: 0.25rem; }
+  .ofc-table { gap: 0; }
+  :root { --card-cpu: max(1.8rem, min(9.6vw, 4.3vh, 3.9rem)); }
+}
 .ofc-tracker-dock { display: none; }
 
 /*

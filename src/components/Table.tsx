@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { Check, Sparkles, Undo2 } from 'lucide-react';
 import { personaFor, quipForResult, quipForStart } from '../ai';
 import {
@@ -28,12 +28,15 @@ import CardTracker from './CardTracker';
 import CoachPanel from './CoachPanel';
 import CpuBadge from './CpuBadge';
 import DeckPile from './DeckPile';
-import Dialogs, { type Dialog } from './Dialogs';
+import type { Dialog } from './Dialogs';
 import FoulChip from './FoulChip';
 import HandTray from './HandTray';
 import Header from './Header';
 import ScoreStrip from './ScoreStrip';
 import StartScreen from './StartScreen';
+
+// Dialogs (replay, stats, rules, settings...) are loaded the first time one is opened.
+const Dialogs = lazy(() => import('./Dialogs'));
 
 const REVEAL_STEP_MS = 650;
 const FLASH_MS = 3200;
@@ -232,7 +235,7 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
           }
         />
       ) : (
-        <main className="ofc-table relative z-10 flex-1 px-1.5 pb-2.5 pt-1.5 sm:px-4">
+        <main className="ofc-table relative z-10 flex-1 px-1.5 pb-2.5 pt-1.5 [@media(max-height:720px)]:pb-1 [@media(max-height:720px)]:pt-0.5 sm:px-4">
           <h1 className="sr-only">Open Face Chinese Poker: hand {Math.max(1, handNo)}</h1>
           <section aria-label={`${persona.name}'s board`} className={`ofc-area-cpu flex flex-col gap-1 ${glow('cpu')}`}>
             <CpuBadge
@@ -259,7 +262,6 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
           <section className="ofc-area-center flex items-center justify-center">
             <div
               className="ofc-center-inner flex flex-col items-center justify-center gap-1.5"
-              style={{ minHeight: 'calc(var(--card-human) * 1.4 + 5.6rem)' }}
             >
             <div className="flex w-full items-center gap-2">
               <DeckPile remaining={52 - game.deckPos} />
@@ -299,7 +301,7 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
                     type="button"
                     onClick={ix.undoLast}
                     disabled={!ix.canUndo}
-                    className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-2 text-xs font-black uppercase tracking-wider text-stone-300 transition enabled:hover:border-[#d4af37]/50 disabled:opacity-30"
+                    className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-2 [@media(max-height:720px)]:py-1.5 text-xs font-black uppercase tracking-wider text-stone-300 transition enabled:hover:border-[#d4af37]/50 disabled:opacity-30"
                   >
                     <Undo2 size={14} aria-hidden="true" /> Undo
                   </button>
@@ -307,7 +309,7 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
                     type="button"
                     onClick={ix.confirm}
                     aria-disabled={!ix.complete}
-                    className={`flex items-center gap-2 rounded-full bg-gradient-to-b from-[#e7c25d] to-[#d4af37] px-7 py-2 text-sm font-black uppercase tracking-widest text-stone-900 shadow-lg transition ${
+                    className={`flex items-center gap-2 rounded-full bg-gradient-to-b from-[#e7c25d] to-[#d4af37] px-7 py-2 [@media(max-height:720px)]:py-1.5 text-sm font-black uppercase tracking-widest text-stone-900 shadow-lg transition ${
                       ix.complete ? 'hover:scale-105 active:scale-95' : 'opacity-35'
                     }`}
                   >
@@ -400,15 +402,19 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
         ids={scored && reveal.done ? api.unlocked : []}
         onOpen={() => setDialog({ kind: 'profile', tab: 'achievements' })}
       />
-      <Dialogs
-        dialog={dialog}
-        setDialog={setDialog}
-        api={api}
-        unseen={view.unseen}
-        result={result}
-        install={install}
-        onStartTutorial={startTutorial}
-      />
+      {dialog && (
+        <Suspense fallback={null}>
+          <Dialogs
+            dialog={dialog}
+            setDialog={setDialog}
+            api={api}
+            unseen={view.unseen}
+            result={result}
+            install={install}
+            onStartTutorial={startTutorial}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };
