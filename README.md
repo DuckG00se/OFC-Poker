@@ -80,7 +80,7 @@ Cards you place stay movable until you press **Confirm**: tap one to take it bac
 
 ### Layout
 
-No horizontal scrolling at any size. In portrait the opponent is on top and your board at the bottom; in landscape the boards sit side by side with your hand underneath. Card size follows both the width and the height of the screen, so the whole table fits on one screen from about 390×800 upward. Smaller or very short screens (for example 375×667, or a phone held sideways) scroll vertically.
+No horizontal scrolling at any size. In portrait the opponent is on top and your board at the bottom; in landscape the boards sit side by side with your hand underneath. Card size follows both the width and the height of the screen, so the whole table fits on one screen from about 375×667 upward (short screens drop the CPU's one-line comment to make room, never the cards). Smaller phones (360×640 and below) and phones held sideways scroll a little vertically rather than shrink cards below a readable size.
 
 ## Progress, saving and installing
 
@@ -166,7 +166,7 @@ Pick a level in the settings (before a hand, or between hands). Each level has i
 | Match                    | Classic        | Pineapple      |
 |--------------------------|----------------|----------------|
 | Medium vs Easy           | +2.5 (0.36)    | +2.3 (0.71)    |
-| Hard vs Medium           | +1.0 (0.44)    | not measured   |
+| Hard vs Medium           | +1.0 (0.44)    | +3.6 (0.75)    |
 | Hard vs Easy             | +3.4 (0.65)    | +7.1 (0.81)    |
 
 | Fouls per hand | Classic  | Pineapple |

@@ -70,7 +70,7 @@ const CpuBadge: React.FC<CpuBadgeProps> = ({
           key={line ?? 'none'}
           aria-live="polite"
           title={line ?? undefined}
-          className={`ofc-fade h-4 truncate text-xs leading-4 ${isHint ? 'text-[#e7c25d]' : 'italic text-stone-400'}`}
+          className={`ofc-fade h-4 [@media(max-height:720px)]:hidden truncate text-xs leading-4 ${isHint ? 'text-[#e7c25d]' : 'italic text-stone-400'}`}
         >
           {line ? (isHint ? line : `“${line}”`) : ''}
         </p>

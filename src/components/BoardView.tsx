@@ -90,7 +90,7 @@ const BoardView: React.FC<BoardViewProps> = ({
             won ? 'bg-[#d4af37]/10 shadow-[inset_0_0_0_1px_rgba(212,175,55,0.45)]' : ''
           }`}
         >
-          <div className="flex h-3.5 items-center justify-between gap-2 px-0.5 text-[10px] leading-none">
+          <div className="flex h-3.5 [@media(max-height:720px)]:h-3 items-center justify-between gap-2 px-0.5 text-[10px] leading-none">
             <span className="flex min-w-0 items-center gap-1.5">
               <span className={`font-black uppercase tracking-[0.16em] ${won ? 'text-[#d4af37]' : 'text-stone-400'}`}>
                 {ROW_LABEL[row]}
