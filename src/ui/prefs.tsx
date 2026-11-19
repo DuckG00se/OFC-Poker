@@ -1,3 +1,4 @@
+import type { TutorialStatus } from './onboarding';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 export interface Helpers {
@@ -28,8 +29,10 @@ export interface Prefs {
   /** Show the CPU's short explanation of some of its moves. */
   cpuHints: boolean;
   helpers: Helpers;
-  /** The guided first hand has been completed or skipped. */
-  tutorialSeen: boolean;
+  /** Whether the new-player welcome and guided hand are still to come, done, or skipped. */
+  tutorialStatus: TutorialStatus;
+  /** The one-time explainer for a first foul has been shown. */
+  foulExplained: boolean;
 }
 
 export const DEFAULT_PREFS: Prefs = {
@@ -40,7 +43,8 @@ export const DEFAULT_PREFS: Prefs = {
   motion: 'full',
   cpuHints: true,
   helpers: { handNames: true, foulWarning: true, outs: true, royalties: true, tracker: true },
-  tutorialSeen: false,
+  tutorialStatus: 'unseen',
+  foulExplained: false,
 };
 
 interface PrefsApi {

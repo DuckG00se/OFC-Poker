@@ -87,8 +87,13 @@ No horizontal scrolling at any size. In portrait the opponent is on top and your
 * **Autosave** (localStorage, this device only): score, settings, preferences, lifetime stats, achievements, the last 50 hands, and the hand in progress, which resumes after a refresh. A hand is saved as its seed plus its action log and rebuilt by replaying it through the engine; the engine ignores illegal actions, and saved data is validated field by field, so a damaged or hand-edited save loses data at worst and cannot crash the game. If the CPU was mid-turn, it simply decides that turn again. Settings has "Erase all data".
 * **Stats:** hands played, win / foul / Fantasyland rates, biggest win, royalties earned, net points, scoops, best no-foul streak.
 * **Hand history and replay:** open any of the last 50 hands from Menu, History and step through it turn by turn (scrubber, play/pause, arrow keys). It shows everything, including a Fantasyland board that was hidden at the time.
-* **Rules and royalties** reference (Menu): the royalty tables are read from the engine, so they cannot drift from what the game pays.
-* **Guided first hand:** an optional walkthrough on your first deal (and from the menu any time). It never blocks play: steps that teach an action wait for you to do it.
+* **New-player experience:**
+  * **How to play** (the `?` button, the start screen and the menu): seven short sections with real cards: the goal, the golden rule shown as a legal board beside a fouled one, how cards arrive, scoring with a worked example computed by the real scoring code, royalties, Fantasyland, and a hand-rankings sheet. Every number on it is imported from `src/engine/rules.ts`; all text is in `src/content/`. Opening it pauses the game.
+  * **Quick ref** (above your board): a three-tab cheat sheet that floats over the opponent's board without pausing, plus tappable row names that say what a row makes and what it pays.
+  * **First launch:** "New to OFC? Learn in 60 seconds" (a four-slide visual intro) or "I know how to play".
+  * **Guided first hand:** it highlights the table, gives advice written from your actual first five cards, warns you (with the reason and a one-tap fix) while a placement is heading for a foul and can still be undone, and celebrates your first scored hand. It never blocks play.
+  * **First foul:** the first time your board fouls, a short explainer shows exactly which rows broke the order.
+  * Completed or skipped is remembered; Settings has "Replay the guided hand" and "Show first-time tips again".
 * **Achievements:** 18, from "first scoop" and "first Fantasyland" to a 10-hand no-foul streak, shown as a toast when unlocked.
 * **Settings:** variant, CPU level, Fantasyland mode, deck style (four-colour, card-back colour), animation speed, sound, vibration, every helper.
 * **Installable PWA that works offline:** a service worker generated at build time precaches the exact files of that build (including the CPU's worker), serves pages network-first so online players get updates, and falls back to the cache offline. Use the browser's install button or Menu, Install app (Chromium); on iOS use Share, Add to Home Screen.

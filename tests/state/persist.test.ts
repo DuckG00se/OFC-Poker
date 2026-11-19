@@ -62,7 +62,7 @@ describe('save and load', () => {
   });
 
   it('restores preferences, and fills in anything missing with the default', () => {
-    const prefs = { ...DEFAULT_PREFS, sound: false, fourColorDeck: true, motion: 'fast' as const, tutorialSeen: true };
+    const prefs = { ...DEFAULT_PREFS, sound: false, fourColorDeck: true, motion: 'fast' as const, tutorialStatus: 'completed' as const };
     const { storage, loaded } = roundTrip(initialAppState('p'), prefs);
     expect(loaded.prefs).toEqual(prefs);
     const raw = JSON.parse(storage.data.get(STATE_KEY) ?? '{}') as { prefs: Record<string, unknown> };

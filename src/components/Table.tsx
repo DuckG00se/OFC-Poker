@@ -22,17 +22,19 @@ import { useKeyboard } from '../ui/useKeyboard';
 import { usePointerDrag } from '../ui/usePointerDrag';
 import { useCountUp, useScoreReveal } from '../ui/useScoreReveal';
 import { useTurnInteraction } from '../ui/useTurnInteraction';
+import { describeProblem, orderProblems, shouldOfferWelcome } from '../ui/onboarding';
 import { useTutorial } from '../ui/useTutorial';
 import AchievementToasts from './AchievementToasts';
 import BoardView from './BoardView';
 import CardTracker from './CardTracker';
-import CoachPanel from './CoachPanel';
+import CoachPanel, { type CoachWarning } from './CoachPanel';
 import CpuBadge from './CpuBadge';
 import DeckPile from './DeckPile';
 import type { Dialog } from './Dialogs';
 import FoulChip from './FoulChip';
 import HandTray from './HandTray';
 import QuickRef from './howto/QuickRef';
+import Welcome from './howto/Welcome';
 import Header from './Header';
 import ScoreStrip from './ScoreStrip';
 import StartScreen from './StartScreen';
@@ -92,11 +94,11 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
     stagedCount: ix.stagedIds.size + ix.stagedDiscards.length,
     turnComplete: ix.complete,
     scoreShown: reveal.done,
-    onDone: () => update({ tutorialSeen: true }),
+    onDone: (outcome) => update({ tutorialStatus: outcome }),
   });
   // On the start screen: offer the guided hand until it has been seen once.
   const [guidedChoice, setGuided] = useState<boolean | null>(null);
-  const guided = guidedChoice ?? !prefs.tutorialSeen;
+  const guided = guidedChoice ?? prefs.tutorialStatus === 'unseen';
   const startTutorial = (): void => {
     tutorial.request();
     if (game.phase === 'placing') setFlash('The guided hand starts with your next deal');
@@ -109,7 +111,8 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
   const glow = (target: typeof coach): string => (coach !== null && coach === target ? 'ofc-coach-target' : '');
 
   const view = useMemo(() => viewFor(game, 'human'), [game]);
-  const foulRisk = useFoulRisk(game, prefs.helpers.foulWarning);
+  // The guided hand warns about fouls even if the player has switched the helper off.
+  const foulRisk = useFoulRisk(game, prefs.helpers.foulWarning || tutorial.active);
   const humanBoard = game.seats.human.board;
   const aiBoard = game.seats.ai.board;
 
@@ -121,6 +124,25 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
     [humanBoard, view.unseen, config.fantasyland],
   );
   const previewTotal = preview.front + preview.mid + preview.back;
+
+  // Guided hand: warn while a staged placement is heading for a foul, while it can still be undone.
+  const problems = useMemo(() => orderProblems(humanBoard), [humanBoard]);
+  const stagedAny = ix.stagedIds.size + ix.stagedDiscards.length > 0;
+  const risky = foulRisk.status === 'certain' || (foulRisk.risk ?? 0) >= 0.5;
+  const warning: CoachWarning | null =
+    tutorial.active && ix.turn !== null && stagedAny && risky
+      ? {
+          text: problems[0] ? describeProblem(problems[0]) : 'Your rows are heading out of order.',
+          percent: foulRisk.status === 'certain' ? null : Math.round((foulRisk.risk ?? 0) * 100),
+          onFix: ix.undoLast,
+        }
+      : null;
+
+  // The first time the player's board fouls, explain what happened (once).
+  const humanFouled = scored && !!result?.seats.human.fouled;
+  useEffect(() => {
+    if (humanFouled && reveal.done && !prefs.foulExplained && dialog === null) setDialog({ kind: 'foul' });
+  }, [humanFouled, reveal.done, prefs.foulExplained, dialog]);
 
   const rowsRevealed = Math.min(reveal.stage, plan.rows);
   const revealedRows = ROW_NAMES.slice(0, rowsRevealed);
@@ -233,7 +255,15 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
         onOpenHelp={() => setDialog({ kind: 'rules' })}
       />
 
-      {game.phase === 'idle' ? (
+      {game.phase === 'idle' && shouldOfferWelcome(prefs, api.stats.handsPlayed, game.phase) ? (
+        <Welcome
+          onKnow={() => update({ tutorialStatus: 'skipped' })}
+          onStartGuided={() => {
+            tutorial.request();
+            api.deal();
+          }}
+        />
+      ) : game.phase === 'idle' ? (
         <StartScreen
           config={session.config}
           onConfig={api.setConfig}
@@ -421,7 +451,7 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
       )}
 
       {quickRef && <QuickRef onClose={() => setQuickRef(false)} />}
-      <CoachPanel tutorial={tutorial} />
+      <CoachPanel tutorial={tutorial} warning={warning} />
       <AchievementToasts
         ids={scored && reveal.done ? api.unlocked : []}
         onOpen={() => setDialog({ kind: 'profile', tab: 'achievements' })}
