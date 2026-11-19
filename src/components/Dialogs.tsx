@@ -87,7 +87,7 @@ const Dialogs: React.FC<DialogsProps> = ({ dialog, setDialog, api, unseen, resul
     case 'details':
       return result ? (
         <Modal title="Hand result" onClose={close}>
-          <ResultDetails result={result} cpuName={personaFor(config.difficulty).name} stake={config.stake} />
+          <ResultDetails result={result} cpuName={personaFor(config.difficulty).name} />
         </Modal>
       ) : null;
     case 'rules':

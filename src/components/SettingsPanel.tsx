@@ -1,8 +1,6 @@
 import React from 'react';
 import type { Difficulty, FantasylandMode, GameConfig, Variant } from '../engine';
 
-const STAKES = [1, 5, 10, 25, 50];
-
 interface OptionProps<T extends string | number> {
   label: string;
   value: T;
@@ -73,12 +71,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onChange }) => (
         { value: 'medium', label: 'Medium', hint: 'Simulates a few outcomes per move' },
         { value: 'hard', label: 'Hard', hint: 'Simulates many outcomes and chases Fantasyland' },
       ]}
-    />
-    <Segmented<number>
-      label="Stake per point"
-      value={config.stake}
-      onChange={(stake) => onChange({ stake })}
-      options={STAKES.map((s) => ({ value: s, label: `$${s}` }))}
     />
   </div>
 );

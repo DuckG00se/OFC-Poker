@@ -31,7 +31,7 @@ export interface GameConfig {
   fantasyland: FantasylandMode;
   /** How strong the CPU opponent plays. */
   difficulty: Difficulty;
-  /** Value of one point. Payout = points * stake. */
+  /** Value of one point in the session total. The game always plays at 1, so the total is plain points. */
   stake: number;
 }
 
@@ -39,7 +39,7 @@ export const DEFAULT_CONFIG: GameConfig = {
   variant: 'classic',
   fantasyland: 'progressive',
   difficulty: 'medium',
-  stake: 5,
+  stake: 1,
 };
 
 export enum HandCategory {

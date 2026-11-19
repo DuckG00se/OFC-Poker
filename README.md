@@ -31,7 +31,7 @@ src/
     scoring    full-hand scoring (rows, scoop, foul, royalties)
     reducer    the state machine: dealing, turns, staging/undo, scoring
     rng, deck  seeded shuffling (same seed = same deal)
-    session    bankroll, dealer button, Fantasyland carry-over
+    session    session score, dealer button, Fantasyland carry-over
   ai/          CPU opponent: heuristic, Monte Carlo search, Fantasyland solver, personas.
                Runs in a Web Worker; sees only what a player may see.
   state/       App reducer, lifetime stats, achievements, save/load, and the hook that owns the CPU's timers
@@ -84,13 +84,13 @@ No horizontal scrolling at any size. In portrait the opponent is on top and your
 
 ## Progress, saving and installing
 
-* **Autosave** (localStorage, this device only): bankroll, settings, preferences, lifetime stats, achievements, the last 50 hands, and the hand in progress, which resumes after a refresh. A hand is saved as its seed plus its action log and rebuilt by replaying it through the engine; the engine ignores illegal actions, and saved data is validated field by field, so a damaged or hand-edited save loses data at worst and cannot crash the game. If the CPU was mid-turn, it simply decides that turn again. Settings has "Erase all data".
+* **Autosave** (localStorage, this device only): score, settings, preferences, lifetime stats, achievements, the last 50 hands, and the hand in progress, which resumes after a refresh. A hand is saved as its seed plus its action log and rebuilt by replaying it through the engine; the engine ignores illegal actions, and saved data is validated field by field, so a damaged or hand-edited save loses data at worst and cannot crash the game. If the CPU was mid-turn, it simply decides that turn again. Settings has "Erase all data".
 * **Stats:** hands played, win / foul / Fantasyland rates, biggest win, royalties earned, net points, scoops, best no-foul streak.
 * **Hand history and replay:** open any of the last 50 hands from Menu, History and step through it turn by turn (scrubber, play/pause, arrow keys). It shows everything, including a Fantasyland board that was hidden at the time.
 * **Rules and royalties** reference (Menu): the royalty tables are read from the engine, so they cannot drift from what the game pays.
 * **Guided first hand:** an optional walkthrough on your first deal (and from the menu any time). It never blocks play: steps that teach an action wait for you to do it.
 * **Achievements:** 18, from "first scoop" and "first Fantasyland" to a 10-hand no-foul streak, shown as a toast when unlocked.
-* **Settings:** variant, CPU level, stake, Fantasyland mode, deck style (four-colour, card-back colour), animation speed, sound, vibration, every helper.
+* **Settings:** variant, CPU level, Fantasyland mode, deck style (four-colour, card-back colour), animation speed, sound, vibration, every helper.
 * **Installable PWA that works offline:** a service worker generated at build time precaches the exact files of that build (including the CPU's worker), serves pages network-first so online players get updates, and falls back to the cache offline. Use the browser's install button or Menu, Install app (Chromium); on iOS use Share, Add to Home Screen.
 
 ## Rules
@@ -111,7 +111,7 @@ Players alternate turns. The dealer button flips every hand, and the player afte
 * **+1** per row won, **0** for a tied row.
 * **Scoop:** winning all three rows adds **+3**.
 * **Foul:** a fouled board loses a full scoop (**6 points**) to the opponent and earns **no royalties**. If both boards foul, nothing changes hands. The non-fouling player still collects their royalties.
-* Payout = net points × stake per point. Your bankroll starts at $1,000 and can go negative.
+* The game scores in plain points: your session score is the running total of your net points per hand, and it can go negative. (The engine still has a stake multiplier internally; the game always plays it at 1.)
 
 ### Royalties (standard American table)
 

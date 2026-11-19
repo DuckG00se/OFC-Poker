@@ -98,6 +98,30 @@ describe('save and load', () => {
   });
 });
 
+describe('scoring is in plain points', () => {
+  it('a save made when the game still played for stakes starts a fresh score', () => {
+    const app = playHands(initialAppState('old-stake'), 2);
+    const { storage } = roundTrip(app);
+    const raw = JSON.parse(storage.data.get(STATE_KEY) ?? '{}') as { session: { bankroll: number; config: { stake: number } } };
+    raw.session.config.stake = 25;
+    raw.session.bankroll = 4321;
+    storage.setItem(STATE_KEY, JSON.stringify(raw));
+    const loaded = loadSave(storage, 'x').app;
+    expect(loaded.session.config.stake).toBe(1);
+    expect(loaded.session.bankroll).toBe(1000);
+    expect(loaded.stats.handsPlayed).toBe(2); // the record of hands played is kept
+  });
+
+  it('a normal save keeps its score', () => {
+    const app = playHands(initialAppState('keep-score'), 2);
+    expect(roundTrip(app).loaded.app.session.bankroll).toBe(app.session.bankroll);
+  });
+
+  it('the product default is one point per point', () => {
+    expect(initialAppState('d').session.config.stake).toBe(1);
+  });
+});
+
 describe('bad saves never break the game', () => {
   const saved = () => {
     const app = playHands(initialAppState('bad'), 2);

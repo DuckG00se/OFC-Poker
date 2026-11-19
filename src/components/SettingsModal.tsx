@@ -11,7 +11,7 @@ interface SettingsModalProps {
   locked: boolean;
   onConfig: (patch: Partial<GameConfig>) => void;
   onNewSession: () => void;
-  /** Erase everything: bankroll, stats, history, achievements and preferences. */
+  /** Erase everything: score, stats, history, achievements and preferences. */
   onResetAll: () => void;
   onClose: () => void;
 }
@@ -121,7 +121,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ config, locked, onConfig,
 
       <Section title="Your data">
         <p className="mb-2 text-xs text-stone-400">
-          Your bankroll, settings, stats, history and any hand in progress are saved on this
+          Your score, settings, stats, history and any hand in progress are saved on this
           device only.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -133,7 +133,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ config, locked, onConfig,
             }}
             className="rounded-full border border-white/15 px-4 py-1.5 text-xs font-black uppercase tracking-wider text-stone-200 transition hover:border-[#d4af37]/50"
           >
-            New session (reset bankroll)
+            New session (reset score)
           </button>
           <button
             type="button"

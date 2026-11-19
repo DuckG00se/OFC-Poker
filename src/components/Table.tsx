@@ -7,6 +7,7 @@ import {
   evaluateRow,
   rowOuts,
   royaltyPreview,
+  sessionScore,
   viewFor,
   type RowName,
   type RowOuts,
@@ -157,10 +158,10 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
       ? api.aiNote.text
       : null;
 
-  // ---- Money: hold the old bankroll until the reveal is over, then count to the new one. ----
-  const payout = scored && result ? result.points.human * config.stake : 0;
-  const bankroll = useCountUp(
-    scored && !reveal.done ? session.bankroll - payout : session.bankroll,
+  // ---- Score: hold the old total until the reveal is over, then count up to the new one. ----
+  const handPoints = scored && result ? result.points.human : 0;
+  const score = useCountUp(
+    scored && !reveal.done ? sessionScore(session) - handPoints : sessionScore(session),
     700 * motion,
   );
 
@@ -215,8 +216,7 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1.5 bg-gradient-to-t from-[#4a2014] to-[#26100a]" />
 
       <Header
-        bankroll={bankroll}
-        stake={config.stake}
+        score={score}
         handNo={Math.max(1, handNo)}
         variant={config.variant}
         soundOn={prefs.sound}
@@ -336,7 +336,6 @@ const Table: React.FC<{ api: GameApi }> = ({ api }) => {
                 stage={reveal.stage}
                 plan={plan}
                 done={reveal.done}
-                stake={config.stake}
                 cpuName={persona.name}
                 fantasylandNext={game.fantasylandNext.human}
                 cpuFantasylandNext={game.fantasylandNext.ai}

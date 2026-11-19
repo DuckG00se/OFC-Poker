@@ -1,9 +1,9 @@
 import React from 'react';
-import { CircleHelp, Coins, Crown, Layers, Menu, Volume2, VolumeX } from 'lucide-react';
+import { CircleHelp, Crown, Layers, Menu, Volume2, VolumeX } from 'lucide-react';
 
 interface HeaderProps {
-  bankroll: number;
-  stake: number;
+  /** Session score in points. */
+  score: number;
   handNo: number;
   variant: string;
   soundOn: boolean;
@@ -33,8 +33,7 @@ const IconButton: React.FC<{
 );
 
 const Header: React.FC<HeaderProps> = ({
-  bankroll,
-  stake,
+  score,
   handNo,
   variant,
   soundOn,
@@ -61,13 +60,14 @@ const Header: React.FC<HeaderProps> = ({
 
     <div
       className="flex items-center gap-2 rounded-full border border-white/5 bg-black/60 px-3 py-1.5 text-xs font-bold"
-      aria-label={`Bankroll ${bankroll} dollars, ${stake} dollars per point`}
+      aria-label={`Score: ${score} points`}
     >
-      <Coins size={13} className={bankroll >= 0 ? 'text-emerald-400' : 'text-rose-400'} aria-hidden="true" />
-      <span className={`font-black tabular-nums ${bankroll >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-        {bankroll < 0 ? '-' : ''}${Math.abs(bankroll).toLocaleString()}
+      <span className="text-[10px] font-black uppercase tracking-widest text-stone-400">Score</span>
+      <span className={`font-black tabular-nums ${score > 0 ? 'text-emerald-400' : score < 0 ? 'text-rose-400' : 'text-stone-200'}`}>
+        {score > 0 ? '+' : score < 0 ? '−' : ''}
+        {Math.abs(score).toLocaleString()}
       </span>
-      <span className="text-stone-400">${stake}/pt</span>
+      <span className="text-stone-400">pts</span>
     </div>
 
     <div className="flex items-center gap-1.5">

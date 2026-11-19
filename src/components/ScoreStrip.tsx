@@ -13,7 +13,6 @@ interface ScoreStripProps {
   stage: number;
   plan: RevealPlan;
   done: boolean;
-  stake: number;
   cpuName: string;
   fantasylandNext: number;
   cpuFantasylandNext: number;
@@ -46,7 +45,6 @@ const ScoreStrip: React.FC<ScoreStripProps> = ({
   stage,
   plan,
   done,
-  stake,
   cpuName,
   fantasylandNext,
   cpuFantasylandNext,
@@ -66,7 +64,6 @@ const ScoreStrip: React.FC<ScoreStripProps> = ({
   });
   if (bonusesShown) running += result.scoop + royaltyNet;
   const shown = useCountUp(done ? result.points.human : running, countMs);
-  const final = result.points.human;
   const tone = shown > 0 ? 'text-emerald-400' : shown < 0 ? 'text-rose-400' : 'text-stone-200';
   const anyFoul = human.fouled || ai.fouled;
 
@@ -85,11 +82,6 @@ const ScoreStrip: React.FC<ScoreStripProps> = ({
       <div className="flex items-baseline gap-2">
         <span className={`text-4xl font-black tabular-nums leading-none ${tone}`}>{signed(shown)}</span>
         <span className={`text-sm font-black ${tone}`}>pts</span>
-        {done && (
-          <span className={`ofc-pop text-lg font-black tabular-nums ${tone}`}>
-            {final < 0 ? '−' : '+'}${Math.abs(final * stake).toLocaleString()}
-          </span>
-        )}
       </div>
 
       {done && (fantasylandNext > 0 || cpuFantasylandNext > 0) && (

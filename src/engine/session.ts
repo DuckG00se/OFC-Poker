@@ -60,3 +60,6 @@ export const settleHand = (session: Session, game: GameState): Session => {
     handsPlayed: session.handsPlayed + 1,
   };
 };
+
+/** The session total in points: how far ahead (or behind) you are since the session began. */
+export const sessionScore = (session: Session): number => session.bankroll - STARTING_BANKROLL;

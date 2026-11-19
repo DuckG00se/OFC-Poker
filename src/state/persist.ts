@@ -1,4 +1,5 @@
 import {
+  STARTING_BANKROLL,
   handSeed,
   initialGameState,
   replay,
@@ -133,10 +134,11 @@ const parseSession = (v: unknown): Session | null => {
   }
   return {
     sessionSeed: v.sessionSeed,
-    config,
+    config: { ...config, stake: 1 },
     handNo: Math.floor(v.handNo),
     button: v.button,
-    bankroll: v.bankroll,
+    // Older saves played for stakes. The game now scores in plain points, so start the score fresh.
+    bankroll: config.stake === 1 ? v.bankroll : STARTING_BANKROLL,
     fantasyland: config.fantasyland === 'off' ? { human: 0, ai: 0 } : fantasyland,
     handsPlayed: Math.max(0, Math.floor(v.handsPlayed)),
   };
@@ -192,7 +194,7 @@ const parseRecord = (v: unknown): HandRecord | null => {
   const log = parseLog(v.log);
   if (!log || log.length === 0 || !isString(v.id)) return null;
   if (!oneOf(v.variant, VARIANTS) || !oneOf(v.difficulty, LEVELS)) return null;
-  const numbers = [v.handNo, v.at, v.stake, v.points, v.payout, v.scoop, v.royalties, v.fantasylandNext];
+  const numbers = [v.handNo, v.at, v.points, v.scoop, v.royalties, v.fantasylandNext];
   if (!numbers.every(isNumber)) return null;
   return {
     id: v.id,
@@ -200,9 +202,7 @@ const parseRecord = (v: unknown): HandRecord | null => {
     at: v.at as number,
     variant: v.variant,
     difficulty: v.difficulty,
-    stake: v.stake as number,
     points: v.points as number,
-    payout: v.payout as number,
     humanFouled: v.humanFouled === true,
     cpuFouled: v.cpuFouled === true,
     scoop: v.scoop as number,

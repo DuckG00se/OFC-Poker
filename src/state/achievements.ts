@@ -1,4 +1,4 @@
-import { HandCategory, ROW_NAMES, STARTING_BANKROLL, type HandScore } from '../engine';
+import { HandCategory, ROW_NAMES, type HandScore } from '../engine';
 import type { HandRecord, LifetimeStats } from './stats';
 
 /** What an achievement check can look at: the hand just finished and the totals after it. */
@@ -7,8 +7,8 @@ export interface AchievementContext {
   result: HandScore;
   /** Lifetime stats including this hand. */
   stats: LifetimeStats;
-  /** Bankroll after this hand. */
-  bankroll: number;
+  /** Session score in points after this hand. */
+  score: number;
 }
 
 export interface Achievement {
@@ -130,10 +130,10 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
     earned: (c) => c.stats.handsPlayed >= 50,
   },
   {
-    id: 'bankroll-double',
-    title: 'Doubled up',
-    description: `Grow your bankroll to $${(STARTING_BANKROLL * 2).toLocaleString()}.`,
-    earned: (c) => c.bankroll >= STARTING_BANKROLL * 2,
+    id: 'score-100',
+    title: 'Century',
+    description: 'Get 100 points ahead in one session.',
+    earned: (c) => c.score >= 100,
   },
 ];
 
